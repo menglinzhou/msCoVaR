@@ -7,3 +7,4 @@ This is the repository to reproduce numerical results in the paper "An extreme v
 We provide the code and data to reproduce the numerical results in Sections 3-4 of the paper.
 
 ## Files
+- top10_nas.csv: The original data used in Section 4.
