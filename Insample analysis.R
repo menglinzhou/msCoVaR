@@ -6,7 +6,7 @@ source(paste(path, "Functions_CoVaR.R", sep = ""))
 ##############################################################
 
 ###### Loading data ################################
-Dat = fread(paste(path,"top10_nas.csv",sep=""))
+Dat = fread(paste(path,"Nasdaq_dataset.csv",sep=""))
 Ldata <- data.table(dcast(Dat,formula=date ~ symbol, value.var="price", drop = FALSE))
 Ldata$date <- as.Date(Ldata$date)
 tsdata = as.timeSeries(Ldata)
