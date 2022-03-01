@@ -6,17 +6,17 @@ source(paste(path, "Functions_CoVaR.R", sep = ""))
 ##############################################################
 
 ###### Loading data ################################
-Dat = fread(paste(path,"Nasdaq_dataset.csv",sep=""))
+Dat = fread(paste(path,"Snp500_dataset.csv",sep=""))
+Dat$date <- as.Date(Dat$date)
 Ldata <- data.table(dcast(Dat,formula=date ~ symbol, value.var="price", drop = FALSE))
 Ldata$date <- as.Date(Ldata$date)
 tsdata = as.timeSeries(Ldata)
 Losses = Return.calculate(tsdata, method = "log")[-1,] * (-100)
-Date = Date = Dat$date[which(Dat$symbol == "NFLX")][-1]
+Date = Dat$date[which(Dat$symbol == "^GSPC")][-1]
 rm(Dat, tsdata)
 
 Losses = data.frame(Losses)
-Losses = na.omit(Losses)
-Losses = Losses[, c("NFLX", "BKNG", "ILMN", "ISRG", "AMZN", "INTU", "ADBE", "REGN", "CSCO", "ATVI", "Nasdaq")]
+colnames(Losses) <- c(colnames(Losses)[-15], "GSPC")
 
 #### Data filtering ################################
 innovations <- Losses
@@ -29,18 +29,19 @@ colnames(innovations) <- colnames(Losses)
 level <- c(0.02,0.05)
 m_group <-  round(c(0.09, 0.14, 0.09, 0.08, 0.03)*nrow(innovations))
 dist_group <- c("log", "hr", "bilog", "alog", "t")
-k_sys <- c(200, 250)
-k_ins <- matrix(rep(c(200,250),10), byrow = T, nrow = 10)
+k_sys <- c(200, 200)
+k_ins <- cbind(c(250, 250, 300, 250, 250, 250, 270, 300, 300, 250, 250, 250, 250, 250),
+               rep(250,14))
 
 #### Insample CoVaR estimation #####################
 CoVaR_insample <- matrix(0, nrow = (ncol(Losses) - 1), ncol = length(dist_group))
 CoVaR_insample_other <- matrix(0, nrow = (ncol(Losses) - 1), ncol = 2)
 VaR_ins <- rep(0, (ncol(Losses) - 1))
 for(i in 1:(ncol(Losses) - 1)){
-  CoVaR_insample[i,] <- covar_est(Data = cbind(innovations[,i], innovations$Nasdaq),
+  CoVaR_insample[i,] <- covar_est(Data = cbind(innovations[,i], innovations$GSPC),
                                   group = dist_group, m = m_group, k = k_sys, p = level)
   VaR_ins[i] <- VaR_estimate(dat = innovations[,i], k = k_ins[i,], p = level[1])
-  CoVaR_insample_other[i,] <- CoVaR_other(Data = cbind(innovations[,i], innovations$Nasdaq),
+  CoVaR_insample_other[i,] <- CoVaR_other(Data = cbind(innovations[,i], innovations$GSPC),
                                           VaR = VaR_ins[i], level = level)
   print(i)
 }
@@ -52,7 +53,7 @@ colnames(CoVaR_output) <- c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
 test_output <-list()
 ave_score <- matrix(0, nrow = nrow(CoVaR_output), ncol = (length(dist_group) + 2))
 for(i in 1:nrow(CoVaR_output)){
-  test <- cbind(innovations[,i], innovations$Nasdaq)
+  test <- cbind(innovations[,i], innovations$GSPC)
   forecast_CoVaR <- matrix(rep(CoVaR_output[i,], nrow(test)), nrow = nrow(test), byrow = T)
   forecast_VaR <- rep(VaR_ins[i], nrow(test))
   test_output[[i]] <- unconditional_test(forecast_CoVaR, forecast_VaR, test = test, level = level)
@@ -72,7 +73,7 @@ for(i in 1:7){
     if(i!= j){
       re = pool_comparative.test(VaR_fr = VaR_ins, CoVaR_fr = CoVaR_output[,i], 
                                  CoVaR_fr_r = CoVaR_output[,j], 
-                                 test_ins = innovations[,-11], test_sys = innovations[,11])
+                                 test_ins = innovations[,-15], test_sys = innovations[,15])
       M_01[i,j] = re[1]
       M_05[i,j] = re[2]
       M_10[i,j] = re[3]
@@ -86,7 +87,7 @@ for(i in 1:7){
 library(reshape2)
 library(ggplot2)
 
-melted_cormat <- melt(M_05, na.rm = TRUE)
+melted_cormat <- melt(M_10, na.rm = TRUE)
 
 ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
   geom_tile(color = "white")+
@@ -102,7 +103,7 @@ coord_fixed()
 
 
 ## individual comparative test
-Compute_M <- function(ins, plot = 5){
+Compute_M <- function(ins, plot = 10){
   M_01 <- diag(rep(NA, 7))
   colnames(M_01) = c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
   rownames(M_01) = c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
@@ -113,7 +114,7 @@ Compute_M <- function(ins, plot = 5){
       if(i!= j){
         re = Ind_comparative.test(VaR_fr = VaR_est_hill[ins], CoVaR_fr = CoVaR_output[ins,i], 
                                   CoVaR_fr_r = CoVaR_output[ins,j], 
-                                  test_ins = innovations[,ins], test_sys = innovations[,11])
+                                  test_ins = innovations[,ins], test_sys = innovations[,15])
         M_01[i,j] = re[1]
         M_05[i,j] = re[2]
         M_10[i,j] = re[3]

@@ -5,37 +5,37 @@ source(paste(path, "Functions_CoVaR.R", sep = ""))
 ##############################################################
 
 ###### Loading data ############################
-Dat = fread(paste(path,"Nasdaq_dataset.csv",sep=""))
+Dat = fread(paste(path,"Snp500_dataset.csv",sep=""))
+Dat$date <- as.Date(Dat$date)
 Ldata <- data.table(dcast(Dat,formula=date ~ symbol, value.var="price", drop = FALSE))
 Ldata$date <- as.Date(Ldata$date)
 tsdata = as.timeSeries(Ldata)
 Losses = Return.calculate(tsdata, method = "log")[-1,] * (-100)
-Date = Date = Dat$date[which(Dat$symbol == "NFLX")][-1]
+Date = Dat$date[which(Dat$symbol == "^GSPC")][-1]
 rm(Dat, tsdata)
 
 Losses = data.frame(Losses)
-Losses = na.omit(Losses)
-Losses = Losses[, c("NFLX", "BKNG", "ILMN", "ISRG", "AMZN", "INTU", "ADBE", "REGN", "CSCO", "ATVI", "Nasdaq")]
+colnames(Losses) <- c(colnames(Losses)[-15], "GSPC")
 
 ####### Set parametes ##########################
 level <- c(0.02,0.05)
-length.out <- nrow(Losses) - 2000
+length.out <- nrow(Losses) - 3000
 begin <- round(seq(1, length.out, 50))
 
-m_group <-  round(c(0.09, 0.14, 0.09, 0.08, 0.03)*2000)
+m_group <-  round(c(0.09, 0.14, 0.09, 0.08, 0.03)*3000)
 dist_group <- c("log", "hr", "bilog", "alog", "t")
-k_sys <- c(90, 113)
-k_ins <- c(90, 100)
+k_sys <- c(110, 110)
+k_ins <- c(150, 120)
 
 #########CoVaR estimation#######################
 
-ins <- 1 ## start with NFLX
+ins <- 1 ## start with AFL
 SData <- cbind(Losses[,ins], Losses$Nasdaq)
 CoVaR_est <- matrix(0, nrow = 50*length(begin), ncol = (length(dist_group) + 2))
 VaR_ins_est <- rep(0, 50*length(begin))
 for(i in 1:length(begin)){
   start <- begin[i]
-  end <- begin[i] + 1999 + 50
+  end <- begin[i] + 2999 + 50
   
   if(end > nrow(SData)) end <- nrow(SData)
   Sfilter_ins <- filtering(SData[start:end,1], forecast = TRUE, n_out = 50)
