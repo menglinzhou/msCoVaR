@@ -1,4 +1,4 @@
-# An extreme value approach to CoVaR estimation
+# Tail risk in the tail: Estimating high quantiles when a related variable is extreme
 
 This is the repository to reproduce numerical results in the paper "Tail risk in the tail: Estimating high quantiles when a related variable is extreme".
 
