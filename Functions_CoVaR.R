@@ -395,10 +395,10 @@ score_fun = function(x, r, level){
 ################################################################
 #### Main code to calculate average score
 ## This function calculate average scores
-## Inputs: forecast_CoVaR??a (n*d) matrix of CoVaR forecasts for different parametric models
+## Inputs: forecast_CoVaR: a (n*d) matrix of CoVaR forecasts for different parametric models
 ##                         d is the number of models; n is the length of forecasts
-##         forecast_VaR??a vector of VaR forecasts for institution
-##         test??a two-dimentional dataframe (institution, market)
+##         forecast_VaR: a vector of VaR forecasts for institution
+##         test: a two-dimentional dataframe (institution, market)
 ##         level: upper risk level for CoVaR
 ################################################################
 average_score = function(forecast_CoVaR, forecast_VaR, test, level){
@@ -419,9 +419,9 @@ average_score = function(forecast_CoVaR, forecast_VaR, test, level){
 ################################################################
 #### unconditional test
 ## This function conduct unconditional test
-## Inputs: forecast_CoVaR??a (n*d) matrix of CoVaR forecasts for different parametric models/methods
+## Inputs: forecast_CoVaR: a (n*d) matrix of CoVaR forecasts for different parametric models/methods
 ##                         d is the number of methods; n is the length of forecasts
-##         forecast_VaR??a vector of VaR forecasts for institution
+##         forecast_VaR: a vector of VaR forecasts for institution
 ##         test??a two-dimentional dataframe (institution, market)
 ##         level: risk level for VaR and CoVaR
 ################################################################
@@ -1756,15 +1756,6 @@ tail_fun = function(n_b,n_1, X){
 
 
 ################################################################
-#### Real CoVaR
-## This function gives the 
-## Inputs: n_subset/n_1: size of subset
-##         n_boot/n_b: the number of bootstrap
-##         X: a sample vector
-################################################################
-
-
-################################################################
 #### main code to compute real values
 ## This function calculate values of eta_0, eta_star, VaR_Y, 
 ##                                   CoVaR_{Y|X}, CoVaR_{Y|X}_star
@@ -1840,3 +1831,144 @@ covar_root = function(y, par, family, p, VaR_X){
     return(re)
   }
 }
+
+
+
+################################################################
+#### main code to test MRV
+
+################################################################
+## This function to test radial component
+## Inputs: data: multivariate data frame
+##         k: sample fraction (can in percentage)
+##         eta: check Einmahl et al. [2021]
+##         scale: scale the data before testing or not
+##         alpha: significance level
+################################################################
+test_R <- function(data, k = 0.1, eta = 0.5, scale = T, alpha){
+  if(scale) data = apply(data, MARGIN = 2, FUN = scale)
+  if(is.null(ncol(data))) R = data
+  if(!is.null(ncol(data))) R = sqrt(rowSums(data^2))
+  #par(mfrow = c(1,2))
+  #evmix::hillplot(R)
+  #hist(R, breaks = 50)
+  n = length(R)
+  if(k < 1) k = round(k*n)
+  R_k <- sort(R, decreasing = F)[n-k]
+  ind <- which(R > R_k)
+  gamma_all <- sum(log(R[ind]) - log(R_k))/k
+  int_t <- function(t){
+    R_kt <- sort(R, decreasing = F)[n-round(k*t)]
+    ((log(R_kt) - log(R_k))/gamma_all + log(t))^2*t^eta
+  }
+  Qn <- k*integrate(int_t, lower = 0, upper = 1, subdivisions = 1000)$value
+  if(alpha == 0.975) reject <- ifelse(Qn > 1.792, 1, 0) ## 0.975
+  if(alpha == 0.95) reject <- ifelse(Qn > 1.515, 1, 0) ## 0.95
+  if(alpha == 0.99) reject <- ifelse(Qn > 2.145, 1, 0) ## 0.99
+  return(c(Qn, reject))
+} 
+
+################################################################
+## The functions to test angular component
+## Inputs: data: multivariate data frame
+##         df: dataframe to subset
+##         colnum: which column to look at
+##         nsplit: number of subsets
+##         final_subsets: list used to store final subsets
+##         k: sample fraction (can in percentage)
+##         m: the number of cutpoint at each dim
+##         scale: scale the data before testing or not
+################################################################
+subset_bycol <- function(df, colnum, nsplit, final_subsets){
+  # split the dataset into 3 pieces by specific column values
+  #
+  # Args:
+  #   df: dataframe
+  #     dataframe to subset
+  #   colnum: integer
+  #     which column to look at
+  #   nsplit: integer
+  #     number of subsets
+  #   final_subsets: list
+  #     list used to store final subsets
+  # Return: list
+  #   a list of n subsets
+  break_points = quantile(df[,colnum], seq(0,1,1/nsplit))
+  res = list()
+  for (i in 1:nsplit) {
+    if (i == 1) {
+      subset_row = which(df[,colnum] <= break_points[i+1])
+      subset = df[subset_row,]
+      res[[i]] = subset
+      
+    } else {
+      subset_row = which((df[,colnum] > break_points[i]) & (df[,colnum] <= break_points[i+1]))
+      subset = df[subset_row,]
+      res[[i]] = subset
+    }
+  }
+  if (colnum == (ncol(df) -1)) { # splitted at the last column
+    for (sub_df in res) {
+      final_subsets[[length(final_subsets)+1L]] <- sub_df
+    }
+    return(final_subsets)
+  }
+  for (i in 1:nsplit) { # recursion
+    final_subsets = Recall(res[[i]], colnum+1, nsplit, final_subsets)
+  }
+  return(final_subsets)
+}
+
+subset_main <- function(df, nsplit) {
+  # split a dataframe into nsplit^nvar subsets
+  #
+  # Arg:
+  #   df: dataframe to split
+  #   nsplit: number of splits for each column
+  # 
+  # Return:
+  #   a list of nsplit^nvar subsets
+  res <- list()
+  final_res = subset_bycol(df, 1, nsplit, res)
+  return(final_res)
+}
+
+test_A <- function(data, k = 0.1, m, scale = F){
+  # m is the number of cutpoint, the k-largest points are divided into m disjoint parts with about equal number of obs.
+  dim = ncol(data)
+  if(scale) data = apply(data, MARGIN = 2, FUN = scale)
+  R = sqrt(rowSums(data^2))
+  Theta = atan2(data[,2], data[,1]) 
+  #indd = NULL                 ## split 1
+  #indd = which(Theta < -pi/2) ## split 2
+  #indd = which(Theta < 0)     ## split 3
+  #ind = which(Theta < pi/2)   ## split 3
+  #Theta[indd] = Theta[indd] + 2*pi
+  n = length(R)
+  if(k < 1) k = round(k*n)
+  R_k = sort(R, decreasing = F)[n-k]
+  ind = which(R > R_k)
+  gamma_all <- sum(log(R[ind]) - log(R_k))/k
+  
+  sub = data.frame(cbind(Theta[ind], R[ind]))
+  re = subset_main(df = sub, nsplit = m)
+  gamma = rep(0, length(re))
+  for(i in 1:length(re)){
+    gamma[i] = sum(log(re[[i]][,ncol(sub)]) - log(R_k))/nrow(re[[i]])
+  }
+  Tn = (k/m^(dim-1))*sum((gamma/gamma_all - 1)^2)
+  pvalue = pchisq(Tn, df = (m^(dim-1)-1), lower.tail = F)
+  reject = ifelse(pvalue < 0.025, 1,0)
+  return(list(subset = re, test = data.frame(Tn = Tn, pvalue = pvalue, reject = reject)))
+}
+
+R_result = matrix(NA, ncol = 2, nrow = length(select))
+A_result = matrix(NA, ncol = 3, nrow = length(select))
+for(i in 1:length(select)){
+  R_result[i,] = test_R(innovations[,c(i,17)], k = 240, scale = F, alpha = 0.975)
+  A_result[i,] = as.numeric(test_A(innovations[,c(i,17)], scale = F, m = 4, k = 240)$test)
+}
+colnames(R_result) = c("test statistic", "reject")
+rownames(R_result) = select
+colnames(A_result) = c("test statistic","pvalue", "reject")
+rownames(A_result) = select
