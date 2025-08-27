@@ -1,13 +1,12 @@
 # Tail risk in the tail: Estimating high quantiles when a related variable is extreme
 
-This is the repository to reproduce numerical results in the paper "Tail risk in the tail: Estimating high quantiles when a related variable is extreme".
+This repository contains the code for replication of the results in the paper "Tail risk in the tail: Estimating high quantiles when a related variable is extreme" by Natalia Nolde, Chen Zhou and Menglin Zhou.
 
-## Overview
-
-We provide the code and data to reproduce the numerical results in Sections 3-4 of the paper.
 
 ## Files
-- Functions.R: The functions used to simulation and real data analysis.
-- Simulation studies.R: The main code to generate simulation results in Section 3.4.
-- out-of-sample forecast.R: The main code to conduct dynamic forecasting in Section 4.4.
-- Snp500_dataset.csv: The original data used in Section 4.
+- The `code` directory: contains the code and data to reproduce the simulation studies in Sections 3.3 and application studied in Section 4.
+  - `functions.R`: The functions used to simulation and real data analysis.
+  - `code_simulation.R`: The main code to generate simulation results in Section 3.3.
+  - `code_application.R`: The main code to conduct dynamic forecasting in Section 4.
+- The `manuscript` directory: contains the source files for the manuscript.
+- The `data` directory: contains original data (Snp500_dataset.csv) used in Section 4.
