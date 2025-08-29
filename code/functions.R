@@ -21,11 +21,10 @@ library(Matrix)
 ##         par: parameters for distribution
 ##         family: name of distribution: "log" is logistic
 ##                                       "HR" is Husler-Reiss distribution
-##                                       "bilog" is  bilogistic distribution
 ##                                       "alog" is asymmetric logistic
 ##                                       "t" stands for t distirbution
 ################################################################
-tail_dependence <= function(X, par, family){
+tail_dependence = function(X, par, family){
   
   x = X[1]
   y = X[2]
@@ -49,13 +48,6 @@ tail_dependence <= function(X, par, family){
     y2 = sqrt((nu+1)/(1-rho^2))*(rho-(x/y)^(-1/nu))
     return(x*pt(y1,nu+1)+y*pt(y2,nu+1))}
   
-  if(family == "bilog"){
-    t = y/(x+y)
-    alpha = par[1]
-    beta = par[2]
-    l = (x+y)*evd::abvevd(x = t, alpha = alpha, beta = beta, model = family)
-    return(x+y-l)}
-  
   if(family == "hr"){
     theta = par[1]
     z1 = 1/theta + theta/2*(log(x/y))
@@ -70,7 +62,6 @@ tail_dependence <= function(X, par, family){
 ## This function generates g(x,y) for specific dist
 ## Inputs: family: name of distribution: "log" is logistic
 ##                                       "HR" is Husler-Reiss distribution
-##                                       "bilog" is  bilogistic distribution
 ##                                       "alog" is asymmetric logistic
 ##                                       "t" stands for t distirbution
 ################################################################
@@ -79,12 +70,6 @@ generate_gfun = function(family){
     
     gfun = function(x){
       return(c(1,x[1], 2*(x[1]+x[2])))}}
-  
-  if(family == "bilog"){
-    
-    gfun = function(x){
-      return(c(1, x[1]))}
-  }
   
   if(family == "t"){
     
@@ -113,7 +98,7 @@ generate_gfun = function(family){
 ##         Rank: rank matrix of the dataset
 ##         m: sample fraction in the nonparametric estimation formula
 ################################################################
-nonpar_tail <= function(X, Rank, m){
+nonpar_tail = function(X, Rank, m){
   ## X stands for the bivariate data
   ## m is the parameter in nonparametric estimation formula
   
@@ -131,14 +116,13 @@ nonpar_tail <= function(X, Rank, m){
 ## Inputs: par: parameters for distribution
 ##         family: name of distribution: "log" is logistic
 ##                                       "HR" is Husler-Reiss distribution
-##                                       "bilog" is  bilogistic distribution
 ##                                       "alog" is asymmetric logistic
 ##                                       "t" stands for t distirbution
 ##         gfun: generated function g(x,y)
 ##         m: sample fraction in the nonparametric estimation formula
 ##         Rank: rank matrix of the dataset
 ################################################################
-optim_fun <= function(par, family, gfun, m, Rank){
+optim_fun = function(par, family, gfun, m, Rank){
   
   gfun = match.fun(gfun)
   
@@ -149,7 +133,7 @@ optim_fun <= function(par, family, gfun, m, Rank){
     return(d_0^2)
   }
   
-  if(family == "t" || family == "bilog" ){
+  if(family == "t"){
     ## two dimensions
     fun_0 = function(x) (tail_dependence(X = x,par, family) - nonpar_tail(X = x, Rank, m))*(gfun(x)[1])
     fun_1 = function(x) (tail_dependence(X = x,par, family) - nonpar_tail(X = x, Rank, m))*(gfun(x)[2])
@@ -177,7 +161,6 @@ optim_fun <= function(par, family, gfun, m, Rank){
 ##         m: sample fraction in the nonparametric estimation formula
 ##         family: name of distribution: "log" is logistic
 ##                                       "HR" is Husler-Reiss distribution
-##                                       "bilog" is  bilogistic distribution
 ##                                       "alog" is asymmetric logistic
 ##                                       "t" stands for t distirbution
 ##         start: start: the starting value for optim, can be NULL
@@ -205,15 +188,6 @@ M_estimate = function(X, family, m, start = NULL){
     mini = optim(par = start,optimal,
                   method = "L-BFGS-B", lower = c(1,0.05), upper = c(10,0.99), 
                   control = list(maxit = 1000, factr = 1e10))}
-  
-  if(family == "bilog"){
-    
-    if(is.null(start)) start = c(0.5,0.5) 
-    
-    mini = optim(par = start,optimal,
-                  method = "L-BFGS-B", lower = c(0.05,0.05), upper = c(0.9,0.9), 
-                  control = list(maxit = 1000, factr = 1e9))}
-  
   
   if(family == "hr"){
     
@@ -244,20 +218,18 @@ tail_estimate = function(dat, k){
 }
 
 ################################################################
-#### Nonparametric estimation of VaR
+#### Nonparametric estimation of quantile Q_Y
 ## This function estimate VaR nonparametrically
 ## Inputs: dat: a data vector
-##         k: a bivariate vector of sample fraction 
-##              (the first one for Hill estimator, the second is for VaR)
-##         p: the level of VaR
-##         tail
+##         k: sample fraction for quantile estimation
+##         p: the level of quantile
+##         gamma: tail index gamma
 ################################################################
-VaR_estimate = function(dat,k, p){
-  tail_index = tail_estimate(dat, k[1])
+Qvar_esti = function(dat,gamma,p,k){
   n = length(dat)
-  X = sort(dat)[n-k[2]]
-  Var_hat = X*(k[2]/(n*p))^(tail_index)
-  return(Var_hat)
+  X = sort(dat)[n-k]
+  Qvar=X*(k/(n*p))^(gamma)
+  return(Qvar)
 }
 
 ################################################################
@@ -363,8 +335,8 @@ filtering = function(dat, forecast = TRUE, n_out = 1, model = "sGARCH"){
     
     fit = ugarchfit(spec = spec, data = dat[1:(length(dat) - n_out)],
                      solver.control=list(trace = 1),solver = "hybrid")
-    resid <-  array(residuals(fit))
-    sigma <- array(sigma(fit))
+    resid =  array(residuals(fit))
+    sigma = array(sigma(fit))
     coef_est = coef(fit)
     
     return(list(residuals = resid/sigma, coef = coef_est,
@@ -913,7 +885,7 @@ New_update = function(sim_y, method="combine", prob = 0.85){
 ##         cor: HAC estimator for the asymptotic variance of the average relative scores (if False, put correlation as 0)
 ##         p: risk level for CoVaR
 ##################################################################
-pool_efp.test <- function(s1,s2,type="two-sided", cor = TRUE){
+pool_efp.test = function(s1,s2,type="two-sided", cor = TRUE){
   ### s1, s2 should be a list, each list component stands for a firm; s2 is the reference method
   
   # differences in scores
@@ -959,19 +931,19 @@ pool_efp.test <- function(s1,s2,type="two-sided", cor = TRUE){
   return(list(tn=tn,pvalue=pv,sn=sn))
 }
 
-TLMfn.biv <- function(tmp, tmpS, cor = TRUE){
+TLMfn.biv = function(tmp, tmpS, cor = TRUE){
   test = pool_efp.test(tmp,tmpS,type="one-sided-ge", cor = cor) # H0^+
-  Tn <- test$tn ## value of the test statistic
-  pvmat <- test$pvalue
-  pvmatL <- pool_efp.test(tmp,tmpS,type="one-sided-le", cor = cor)$pvalue # H0^-
+  Tn = test$tn ## value of the test statistic
+  pvmat = test$pvalue
+  pvmatL = pool_efp.test(tmp,tmpS,type="one-sided-le", cor = cor)$pvalue # H0^-
   
-  TLM01 <- (pvmat <= 0.01) + (pvmatL > 0.01)
-  TLM05 <- (pvmat <= 0.05) + (pvmatL > 0.05)
-  TLM10 <- (pvmat <= 0.10) + (pvmatL > 0.10)
+  TLM01 = (pvmat = 0.01) + (pvmatL > 0.01)
+  TLM05 = (pvmat = 0.05) + (pvmatL > 0.05)
+  TLM10 = (pvmat = 0.10) + (pvmatL > 0.10)
   return(c(TLM01=TLM01, TLM05=TLM05, TLM10=TLM10,Tn=Tn))
 }
 
-comparative.test <- function(VaR_fr, CoVaR_fr, CoVaR_fr_r, test_ins, test_sys, p){
+comparative.test = function(VaR_fr, CoVaR_fr, CoVaR_fr_r, test_ins, test_sys, p){
   ### VaR_fr is the forecasted value of VaR of intitutions
   ### CoVaR_fr is forecasted value of CoVaR 
   ### CoVaR_fr_r is forecasted value of CoVaR of reference method
@@ -982,14 +954,14 @@ comparative.test <- function(VaR_fr, CoVaR_fr, CoVaR_fr_r, test_ins, test_sys, p
   tmpS = list()
   
   for(i in 1:d){
-    ind_pick <- which(test_ins[,i] > VaR_fr[,i])
-    test_sub <- test_sys[ind_pick]
-    CoVaR_fr_sub <- CoVaR_fr[ind_pick,i]
-    CoVaR_fr_r_sub <- CoVaR_fr_r[ind_pick,i]
-    tmp[[i]] <- score_fun(x = test_sub, r = CoVaR_fr_sub, level = p)
-    tmpS[[i]] <- score_fun(x = test_sub, r = CoVaR_fr_r_sub, level = p)
+    ind_pick = which(test_ins[,i] > VaR_fr[,i])
+    test_sub = test_sys[ind_pick]
+    CoVaR_fr_sub = CoVaR_fr[ind_pick,i]
+    CoVaR_fr_r_sub = CoVaR_fr_r[ind_pick,i]
+    tmp[[i]] = score_fun(x = test_sub, r = CoVaR_fr_sub, level = p)
+    tmpS[[i]] = score_fun(x = test_sub, r = CoVaR_fr_r_sub, level = p)
   }
-  re <- TLMfn.biv(tmp, tmpS, cor = TRUE)
+  re = TLMfn.biv(tmp, tmpS, cor = TRUE)
   
   return(re)
 }
@@ -1288,7 +1260,7 @@ mst.mle = function (X, y, freq, start, fixed.df = NA, trace = FALSE,
 solvePD = function(x)
 { # inverse of a symmetric positive definite matrix
   u = chol(x, pivot = FALSE)
-  if(prod(diag(u)) <= 0) stop("matrix not positive definite")
+  if(prod(diag(u)) = 0) stop("matrix not positive definite")
   # ui = backsolve(u,diag(ncol(x)))
   # ui %*% t(ui)
   chol2inv(u)
@@ -1650,108 +1622,8 @@ data_generate = function(real, n, N, dist, seed = 2018){
       scale = matrix(c(1,rho,rho,1),2,2)
       X[,i] = as.vector(rmvt(n,sigma = scale, nu))}
   }
-  
-  if(dist == "bilog"){
-    alpha = real[1]
-    beta = real[2]
-    
-    for(i in 1:N){
-      X[,i] = as.vector(rbvevd(n = n, alpha = alpha, beta = beta,
-                                model = dist, mar1 = c(1,1,1)))
-    }}
+
   return(X)
-}
-
-
-################################################################
-#### select sample fraction k in Hill estimator
-## This function calculate sample fraction k for Hill estimator with 
-## bootstrap method in Danielsson et al.[2001]
-## Inputs: dat: a sample vector
-##         nb: the number of bootstrap
-##         step: step size
-################################################################
-index_estimate = function(dat, nb = 1000, step = 200){
-  
-  n = length(dat)
-  
-  n1 = seq(round(0.1*n),n,by = step)
-  
-  num = length(n1)
-  
-  cl = parallel::makeCluster(getOption('cl.cores', 6))
-  doParallel::registerDoParallel(cl)
-  res = foreach::foreach(i=1:num, .export = ls(envir = globalenv()),
-                          .combine = rbind) %dopar%  tail_fun(n_b = nb,n_1 = n1[i], X = dat)
-  parallel::stopCluster(cl)
-  
-  R = res[,2]^2/res[,4]
-  
-  ind = which(R == min(na.omit(R)))
-  
-  k_1 = as.numeric(res[ind,1])
-  k_2 = as.numeric(res[ind,3])
-  n_1 = as.numeric(n1[ind])
-  
-  k = (k_1^2/k_2)*((log(k_1))^2/(2*log(n_1)-log(k_1))^2)^((log(n_1)-log(k_1))/log(n_1))
-  k = round(k)
-  if(k == 0) k = 1
-  x = sort(dat)
-  y = x[(n-k+1):n]
-  tk = sum(log(y)-log(x[n-k]))/k
-  return(c(k, tk))
-}
-
-################################################################
-#### asymptotic expectation
-## This function simulated bivariate data from a given distribution
-## Inputs: X: a sample vector
-##         k: a given sample fraction
-################################################################
-Cal = function(X,k){
-  k = round(k)
-  x = sort(X)
-  n = length(X)
-  y = x[(n-k+1):n]
-  Mk = sum((log(y)-log(x[n-k]))^2)/k
-  tk = sum(log(y)-log(x[n-k]))/k
-  return((Mk-2*tk^2)^2)
-}
-
-################################################################
-#### sample fraction
-## This function calculate sample fraction k for a given subset size 
-## Inputs: n_subset/n_1: size of subset
-##         n_boot/n_b: the number of bootstrap
-##         X: a sample vector
-################################################################
-k_estimate = function(n_subset,n_boot,X, seed = 2018){
-  set.seed(seed)
-  sample_b = matrix(0,nrow = n_boot, ncol = n_subset)
-  max_k_b = rep(0, n_boot)
-  for(i in 1:n_boot){
-    sample_b[i,] = sample(X, size = n_subset, replace = TRUE)
-    max_k_b[i] = length(which(sample_b[i,]>0))-1}
-  
-  optimal_fun = function(par){
-    re = apply(sample_b, MARGIN = 1, Cal, k = par[1])
-    return(mean(re))
-  }
-  
-  max_k = min(max_k_b)
-  opti = optimize(optimal_fun, interval = c(1,max_k))
-  k_star = round(opti$minimum)
-  Q_k = optimal_fun(par = k_star)
-  
-  return(c(k_star,Q_k))
-}
-
-tail_fun = function(n_b,n_1, X){
-  n = length(X)
-  re_1 = k_estimate(n_subset = n_1, n_boot = n_b, X=X)
-  n_2 = round(n_1^2/n)
-  re_2 = k_estimate(n_subset = n_2, n_boot = n_b, X=X)
-  return(c(re_1,re_2))
 }
 
 
@@ -1768,7 +1640,7 @@ real_compute = function(par, family, p){
   
   eta_star = eta_estimate(par_hat = par, p = p, family = family)
   
-  if(family %in% c("log", "alog","bilog","hr")){
+  if(family %in% c("log", "alog", "hr")){
     
     VaR_Y = qfrechet(1-p[2], loc=0, scale=1, shape=1, lower.tail = TRUE)
     
@@ -1779,23 +1651,23 @@ real_compute = function(par, family, p){
     CoVaR = uniroot(covar_root, par = par, family = family, p = p, VaR_X = Var_X, 
                      interval = c(0, 1000000))$root
     
-    eta_0 = pfrechet(CoVaR, loc=0, scale=1, shape=1, lower.tail = FALSE)/p[2]
+    eta = pfrechet(CoVaR, loc=0, scale=1, shape=1, lower.tail = FALSE)/p[2]
     }
   
   if(family %in% c("t")){
     
     VaR_Y = qt(1-p[2], df = par[1], lower.tail = TRUE)
     
-    covar_star = qt(1-p[2]*eta_star, df = par[1], lower.tail = TRUE)
+    CoVaR_star = qt(1-p[2]*eta_star, df = par[1], lower.tail = TRUE)
     
     Var_X = qt(1-p[1], df = par[1], lower.tail = TRUE)
     
     CoVaR = uniroot(covar_root, par = par, family = family, p = p, VaR_X = Var_X, 
                      interval = c(0, 1000000))$root
     
-    eta_0 = pt(CoVaR, df = par[1], lower.tail = FALSE)/p[2]}
+    eta = pt(CoVaR, df = par[1], lower.tail = FALSE)/p[2]}
   
-  return(c(eta_0 = eta_0, eta_star = eta_star, VaR_Y = VaR_Y, CoVaR = CoVaR, CoVaR_star = CoVaR_star))
+  return(c(eta = eta, eta_star = eta_star, VaR_Y = VaR_Y, CoVaR = CoVaR, CoVaR_star = CoVaR_star))
   
 }
 
@@ -1816,17 +1688,11 @@ covar_root = function(y, par, family, p, VaR_X){
     return(re)
   }
   
-  if(familye %in% c("bilog")){
-    
-    re = pbvevd(q = c(VaR_X, y), alpha = par[1], beta = par[2], model = family,
-                 mar1 = c(1,1,1), lower.tail = FALSE) - p[1]*p[2]
-    return(re)
-  }
   if(family == "t"){
     
     scale = matrix(c(1, par[2], par[2],1),2,2)
     
-    re = pmvt(lower = c(xq, y), df = par[1], sigma = scale) - p[1]*p[2]
+    re = pmvt(lower = c(VaR_X, y), df = par[1], sigma = scale) - p[1]*p[2]
     
     return(re)
   }
@@ -1845,26 +1711,24 @@ covar_root = function(y, par, family, p, VaR_X){
 ##         scale: scale the data before testing or not
 ##         alpha: significance level
 ################################################################
-test_R <- function(data, k = 0.1, eta = 0.5, scale = T, alpha){
+test_R = function(data, k = 0.1, eta = 0.5, scale = T, alpha){
   if(scale) data = apply(data, MARGIN = 2, FUN = scale)
   if(is.null(ncol(data))) R = data
   if(!is.null(ncol(data))) R = sqrt(rowSums(data^2))
-  #par(mfrow = c(1,2))
-  #evmix::hillplot(R)
-  #hist(R, breaks = 50)
+
   n = length(R)
   if(k < 1) k = round(k*n)
-  R_k <- sort(R, decreasing = F)[n-k]
-  ind <- which(R > R_k)
-  gamma_all <- sum(log(R[ind]) - log(R_k))/k
-  int_t <- function(t){
-    R_kt <- sort(R, decreasing = F)[n-round(k*t)]
+  R_k = sort(R, decreasing = F)[n-k]
+  ind = which(R > R_k)
+  gamma_all = sum(log(R[ind]) - log(R_k))/k
+  int_t = function(t){
+    R_kt = sort(R, decreasing = F)[n-round(k*t)]
     ((log(R_kt) - log(R_k))/gamma_all + log(t))^2*t^eta
   }
-  Qn <- k*integrate(int_t, lower = 0, upper = 1, subdivisions = 1000)$value
-  if(alpha == 0.975) reject <- ifelse(Qn > 1.792, 1, 0) ## 0.975
-  if(alpha == 0.95) reject <- ifelse(Qn > 1.515, 1, 0) ## 0.95
-  if(alpha == 0.99) reject <- ifelse(Qn > 2.145, 1, 0) ## 0.99
+  Qn = k*integrate(int_t, lower = 0, upper = 1, subdivisions = 1000)$value
+  if(alpha == 0.975) reject = ifelse(Qn > 1.792, 1, 0) ## 0.975
+  if(alpha == 0.95) reject = ifelse(Qn > 1.515, 1, 0) ## 0.95
+  if(alpha == 0.99) reject = ifelse(Qn > 2.145, 1, 0) ## 0.99
   return(c(Qn, reject))
 } 
 
@@ -1879,7 +1743,7 @@ test_R <- function(data, k = 0.1, eta = 0.5, scale = T, alpha){
 ##         m: the number of cutpoint at each dim
 ##         scale: scale the data before testing or not
 ################################################################
-subset_bycol <- function(df, colnum, nsplit, final_subsets){
+subset_bycol = function(df, colnum, nsplit, final_subsets){
   # split the dataset into 3 pieces by specific column values
   #
   # Args:
@@ -1897,19 +1761,19 @@ subset_bycol <- function(df, colnum, nsplit, final_subsets){
   res = list()
   for (i in 1:nsplit) {
     if (i == 1) {
-      subset_row = which(df[,colnum] <= break_points[i+1])
+      subset_row = which(df[,colnum] = break_points[i+1])
       subset = df[subset_row,]
       res[[i]] = subset
       
     } else {
-      subset_row = which((df[,colnum] > break_points[i]) & (df[,colnum] <= break_points[i+1]))
+      subset_row = which((df[,colnum] > break_points[i]) & (df[,colnum] = break_points[i+1]))
       subset = df[subset_row,]
       res[[i]] = subset
     }
   }
   if (colnum == (ncol(df) -1)) { # splitted at the last column
     for (sub_df in res) {
-      final_subsets[[length(final_subsets)+1L]] <- sub_df
+      final_subsets[[length(final_subsets)+1L]] = sub_df
     }
     return(final_subsets)
   }
@@ -1919,7 +1783,7 @@ subset_bycol <- function(df, colnum, nsplit, final_subsets){
   return(final_subsets)
 }
 
-subset_main <- function(df, nsplit) {
+subset_main = function(df, nsplit) {
   # split a dataframe into nsplit^nvar subsets
   #
   # Arg:
@@ -1928,12 +1792,12 @@ subset_main <- function(df, nsplit) {
   # 
   # Return:
   #   a list of nsplit^nvar subsets
-  res <- list()
+  res = list()
   final_res = subset_bycol(df, 1, nsplit, res)
   return(final_res)
 }
 
-test_A <- function(data, k = 0.1, m, scale = F){
+test_A = function(data, k = 0.1, m, scale = F){
   # m is the number of cutpoint, the k-largest points are divided into m disjoint parts with about equal number of obs.
   dim = ncol(data)
   if(scale) data = apply(data, MARGIN = 2, FUN = scale)
@@ -1948,7 +1812,7 @@ test_A <- function(data, k = 0.1, m, scale = F){
   if(k < 1) k = round(k*n)
   R_k = sort(R, decreasing = F)[n-k]
   ind = which(R > R_k)
-  gamma_all <- sum(log(R[ind]) - log(R_k))/k
+  gamma_all = sum(log(R[ind]) - log(R_k))/k
   
   sub = data.frame(cbind(Theta[ind], R[ind]))
   re = subset_main(df = sub, nsplit = m)
@@ -1961,14 +1825,3 @@ test_A <- function(data, k = 0.1, m, scale = F){
   reject = ifelse(pvalue < 0.025, 1,0)
   return(list(subset = re, test = data.frame(Tn = Tn, pvalue = pvalue, reject = reject)))
 }
-
-R_result = matrix(NA, ncol = 2, nrow = length(select))
-A_result = matrix(NA, ncol = 3, nrow = length(select))
-for(i in 1:length(select)){
-  R_result[i,] = test_R(innovations[,c(i,17)], k = 240, scale = F, alpha = 0.975)
-  A_result[i,] = as.numeric(test_A(innovations[,c(i,17)], scale = F, m = 4, k = 240)$test)
-}
-colnames(R_result) = c("test statistic", "reject")
-rownames(R_result) = select
-colnames(A_result) = c("test statistic","pvalue", "reject")
-rownames(A_result) = select
