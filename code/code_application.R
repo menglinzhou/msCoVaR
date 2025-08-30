@@ -1,14 +1,14 @@
 ##############################################################
 ############## Dynamic forecast ########################
-path = ".../"
-source(paste(path, "Functions_CoVaR.R", sep = ""))
+path = getwd()
+source(paste(path, "/code/functions.R", sep = ""))
 ##############################################################
 library(data.table)
 library(timeSeries)
 library(PerformanceAnalytics)
 
 ###### Loading data ############################
-Dat = fread(paste(path,"Snp500_dataset.csv",sep=""))
+Dat = fread(paste(path,"/data/Snp500_dataset.csv",sep=""))
 Dat$date = as.Date(Dat$date)
 Ldata = data.table(dcast(Dat,formula=date ~ symbol, value.var="price", drop = FALSE))
 Ldata$date = as.Date(Ldata$date)
@@ -16,20 +16,102 @@ tsdata = as.timeSeries(Ldata)
 Losses = Return.calculate(tsdata, method = "log")[-1,] * (-100)
 Losses = data.frame(Losses)
 rownames(Losses) = Ldata$date[-1]
-Losses = data.frame(Losses[,-1], GSPC = Losses[,1])
+Losses = data.frame(Losses[,-ncol(Losses)], GSPC = Losses[,ncol(Losses)])
 rm(Dat, tsdata, Ldata)
-
 
 ####### Set parameters ##########################
 level = c(0.02,0.05)
 length.out = nrow(Losses) - 3000
 begin = round(seq(1, length.out, 50))
 
-m_group =  round(c(0.09, 0.14, 0.09, 0.08, 0.03)*3000)
-dist_group = c("log", "hr", "bilog", "alog", "t")
-k_sys = ## a sequence of best values selected by minimizing in-sample ave score
+###################################### Procedure to select best k2
 
-#########CoVaR estimation#######################
+####### Apply GARCH filtering ###################
+filter_all = function(dat, model = "sGARCH"){
+  ### this function applies GARCH filtering to all 51 samples with size 3000
+  innos <- matrix(0, nrow = 3000, ncol = length(begin))
+  coef_est <- matrix(0, ncol = 7, nrow = length(begin))
+  mean_f <- sigma_f <- NA
+  for(i in 1:length(begin)){
+    start <- begin[i]
+    end <- begin[i] + 2999 + 50
+    if(end > length(dat)) end <- length(dat)
+    filter_re <- tryCatch(filtering(dat[start:end], forecast = TRUE, n_out = (end-start-2999), 
+                                    model = model),
+                          error = function(e){filtering(dat[start:end], forecast = TRUE, 
+                                                        n_out = (end-start-2999), 
+                                                        model = "sGARCH")})
+    innos[,i] <- filter_re$residuals
+    coef_est[i,] <- filter_re$coef
+    mean_f <- c(mean_f, filter_re$mean.forecast)
+    sigma_f <- c(sigma_f, filter_re$sigma.forecast)
+    print(i)
+  }
+  mean_f <- mean_f[-1]
+  sigma_f <- sigma_f[-1]
+  return(list(innovations = innos, coef = coef_est,
+              mean.forecasts = mean_f, sigma.forecasts = sigma_f))
+}
+
+cl <- parallel::makeCluster(getOption('cl.cores', 6))
+doParallel::registerDoParallel(cl)
+filter_result <- foreach(j=1:ncol(Losses), .export = ls(envir = globalenv()), 
+                          .packages=c('rugarch'), .errorhandling = "pass") %dopar% 
+  filter_all(Losses[,j])
+stopCluster(cl)
+names(filter_result) <- colnames(Losses)
+
+####### M-estimation ############################
+m_group <-  round(c(0.09, 0.14, 0.08, 0.03)*3000)
+dist_group <- c("log", "hr", "alog", "t")
+
+M_est_allinnos <- function(ins, sys, dist, m){
+  ### This function do M-estimation for all 51 samples with size 3000 for an ins
+  cl <- parallel::makeCluster(getOption('cl.cores', 6))
+  doParallel::registerDoParallel(cl)
+  M_est <- foreach(i = 1:ncol(ins), .export = ls(envir = globalenv()), 
+                   .combine = rbind,
+                   .packages=c('rugarch'), .errorhandling = "pass") %dopar% 
+    M_estimate(X = cbind(ins[,i], sys[,i]), family = dist, m = m)
+  stopCluster(cl)
+  return(M_est)
+}
+
+M_result = list()
+for(j in 1:(length(filter_result)-1)){
+  re = list()
+  for(s in 1:length(dist_group)){
+    re[[s]] = M_est_allinnos(ins = filter_result[[j]]$innovations, sys = filter_result[["GSPC"]]$innovations,
+                             dist = dist_group[s], m = m_group[s])
+  }
+  M_result[[j]] = re
+  names(M_result) = names(filter_result)[1:j]
+}
+rm(re, j, s)
+
+
+####### Estimate VaR_Y with different k2 ######
+k1 = 150
+tail_sys = rep(NA, length(begin))
+for (i in 1:length(tail_sys)){
+  tail_sys[i] = tail_estimate(filter_result[["GSPC"]]$innovations[,i], k = 150)
+}
+  
+
+k2_seq = seq(200, 300, 10)
+VaR_sys = matrix(NA, nrow = length(begin), ncol = length(k2_seq))
+for (i in 1:nrow(VaR_sys)){
+  for (j in 1:ncol(VaR_sys))
+    VaR_sys[i, j] = Qvar_esti(dat = filter_result[["GSPC"]]$innovations[,i], 
+                              gamma = tail_sys[i], 
+                              k = k2_seq[j], p = level[2])
+}
+
+
+
+
+
+###################################### CoVaR estimation with given parameters
 
 ins = 1 ## start with AFL
 k_ins = ## a sequence of best values selected by minimizing in-sample ave score

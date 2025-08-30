@@ -287,9 +287,10 @@ covar_est = function(Data, par_hat = NULL, group = NULL, m = NULL, k, p){
     
   }
   
-  VaR_est = VaR_estimate(Data[,2], k, p = p[2])
+  sys_tail = tail_estimate(dat = Data[,2], k=k[1])
   
-  sys_tail = tail_estimate(Data[,2], k = k[1])
+  VaR_est = Qvar_esti(dat = Ddata[,2], gamma = sys_tail, 
+                      k = k[2], p = p[2])
   
   covar_est = VaR_est*(eta_est)^(-sys_tail)
   
@@ -1257,10 +1258,11 @@ mst.mle = function (X, y, freq, start, fixed.df = NA, trace = FALSE,
 }
 
 
-solvePD = function(x)
-{ # inverse of a symmetric positive definite matrix
+solvePD = function(x){ 
+  # inverse of a symmetric positive definite matrix
   u = chol(x, pivot = FALSE)
-  if(prod(diag(u)) = 0) stop("matrix not positive definite")
+  if(prod(diag(u)) == 0) 
+    stop("matrix not positive definite")
   # ui = backsolve(u,diag(ncol(x)))
   # ui %*% t(ui)
   chol2inv(u)
@@ -1761,7 +1763,7 @@ subset_bycol = function(df, colnum, nsplit, final_subsets){
   res = list()
   for (i in 1:nsplit) {
     if (i == 1) {
-      subset_row = which(df[,colnum] = break_points[i+1])
+      subset_row = which(df[,colnum] == break_points[i+1])
       subset = df[subset_row,]
       res[[i]] = subset
       
