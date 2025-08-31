@@ -1,7 +1,7 @@
 ####################################################################
 #### Simulation study ##############################################
-path = ".../"
-source(paste(path, "functions.R", sep = ""))
+path = getwd()
+source(paste(path, "/code/functions.R", sep = ""))
 
 level = c(0.05,0.05)  ## (p1, p2)
 n = 3000  ## sample size

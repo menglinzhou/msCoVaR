@@ -24,97 +24,13 @@ level = c(0.02,0.05)
 length.out = nrow(Losses) - 3000
 begin = round(seq(1, length.out, 50))
 
-###################################### Procedure to select best k2
-
-####### Apply GARCH filtering ###################
-filter_all = function(dat, model = "sGARCH"){
-  ### this function applies GARCH filtering to all 51 samples with size 3000
-  innos <- matrix(0, nrow = 3000, ncol = length(begin))
-  coef_est <- matrix(0, ncol = 7, nrow = length(begin))
-  mean_f <- sigma_f <- NA
-  for(i in 1:length(begin)){
-    start <- begin[i]
-    end <- begin[i] + 2999 + 50
-    if(end > length(dat)) end <- length(dat)
-    filter_re <- tryCatch(filtering(dat[start:end], forecast = TRUE, n_out = (end-start-2999), 
-                                    model = model),
-                          error = function(e){filtering(dat[start:end], forecast = TRUE, 
-                                                        n_out = (end-start-2999), 
-                                                        model = "sGARCH")})
-    innos[,i] <- filter_re$residuals
-    coef_est[i,] <- filter_re$coef
-    mean_f <- c(mean_f, filter_re$mean.forecast)
-    sigma_f <- c(sigma_f, filter_re$sigma.forecast)
-    print(i)
-  }
-  mean_f <- mean_f[-1]
-  sigma_f <- sigma_f[-1]
-  return(list(innovations = innos, coef = coef_est,
-              mean.forecasts = mean_f, sigma.forecasts = sigma_f))
-}
-
-cl <- parallel::makeCluster(getOption('cl.cores', 6))
-doParallel::registerDoParallel(cl)
-filter_result <- foreach(j=1:ncol(Losses), .export = ls(envir = globalenv()), 
-                          .packages=c('rugarch'), .errorhandling = "pass") %dopar% 
-  filter_all(Losses[,j])
-stopCluster(cl)
-names(filter_result) <- colnames(Losses)
-
-####### M-estimation ############################
-m_group <-  round(c(0.09, 0.14, 0.08, 0.03)*3000)
-dist_group <- c("log", "hr", "alog", "t")
-
-M_est_allinnos <- function(ins, sys, dist, m){
-  ### This function do M-estimation for all 51 samples with size 3000 for an ins
-  cl <- parallel::makeCluster(getOption('cl.cores', 6))
-  doParallel::registerDoParallel(cl)
-  M_est <- foreach(i = 1:ncol(ins), .export = ls(envir = globalenv()), 
-                   .combine = rbind,
-                   .packages=c('rugarch'), .errorhandling = "pass") %dopar% 
-    M_estimate(X = cbind(ins[,i], sys[,i]), family = dist, m = m)
-  stopCluster(cl)
-  return(M_est)
-}
-
-M_result = list()
-for(j in 1:(length(filter_result)-1)){
-  re = list()
-  for(s in 1:length(dist_group)){
-    re[[s]] = M_est_allinnos(ins = filter_result[[j]]$innovations, sys = filter_result[["GSPC"]]$innovations,
-                             dist = dist_group[s], m = m_group[s])
-  }
-  M_result[[j]] = re
-  names(M_result) = names(filter_result)[1:j]
-}
-rm(re, j, s)
-
-
-####### Estimate VaR_Y with different k2 ######
-k1 = 150
-tail_sys = rep(NA, length(begin))
-for (i in 1:length(tail_sys)){
-  tail_sys[i] = tail_estimate(filter_result[["GSPC"]]$innovations[,i], k = 150)
-}
-  
-
-k2_seq = seq(200, 300, 10)
-VaR_sys = matrix(NA, nrow = length(begin), ncol = length(k2_seq))
-for (i in 1:nrow(VaR_sys)){
-  for (j in 1:ncol(VaR_sys))
-    VaR_sys[i, j] = Qvar_esti(dat = filter_result[["GSPC"]]$innovations[,i], 
-                              gamma = tail_sys[i], 
-                              k = k2_seq[j], p = level[2])
-}
-
-
-
-
-
+m_group =  round(c(0.09, 0.14, 0.08, 0.03)*3000)
+dist_group = c("log", "hr", "alog", "t")
+k_sys = ## a sequence of best values selected by minimizing in-sample ave score (for proposed method)
+k_ins = ## a sequence of best values selected by minimizing in-sample ave score (for NZ method)
 ###################################### CoVaR estimation with given parameters
 
 ins = 1 ## start with AFL
-k_ins = ## a sequence of best values selected by minimizing in-sample ave score
 SData = cbind(Losses[,ins], Losses$GSPC)
 CoVaR_est = matrix(0, nrow = 50*length(begin), ncol = (length(dist_group) + 2))
 VaR_ins_est = rep(0, 50*length(begin))
@@ -128,13 +44,15 @@ for(i in 1:length(begin)){
   
   Sinnos = cbind(Sfilter_ins$residuals, Sfilter_sys$residuals)
   
-  CoVaR_Z = covar_est(Sinnos, group = dist_group, m = m_group, k = c(150,k_sys[j]), 
+  CoVaR_Z = covar_est(Sinnos, group = dist_group, m = m_group, 
+                      k = c(150,k_sys[i]), 
                        p = level)## proposed method
   
   ## other two methods
-  VaR_ins_Z = VaR_estimate(dat = Sinnos[,1], k = c(150,k_ins[j]), p = level[1])
+  VaR_ins_Z = VaR_estimate(dat = Sinnos[,1], k = c(150,k_ins[i]), p = level[1])
   CoVaR_NZ_Z = CoVaR_NZ(Data = Sinnos, VaR = VaR_ins_Z, level = level)
-  CoVaR_FP_Z = CoVaR_NZ(Data = Sinnos, fit_par = Sfilter_ins$coef, level = level)
+  CoVaR_FP_Z = CoVaR_NZ(Data = Sinnos, fit_par = Sfilter_ins$coef, 
+                        level = level)
   
   VaR_ins_est[(50*i-49):(50*i)] = VaR_ins_Z*Sfilter_ins$sigma.forecast + Sfilter_ins$mean.forecast
   
@@ -144,12 +62,12 @@ for(i in 1:length(begin)){
   VaR_ins_est = VaR_ins_est[1:length.out]
   CoVaR_est = CoVaR_est[1:length.out,]
 }
-colnames(CoVaR_est) = c("log", "hr", "bilog", "alog", "t", "FP", "EVT_NZ")
+colnames(CoVaR_est) = c("log", "hr", "alog", "t", "FP", "EVT_NZ")
 
 #### Average score #############################
 test = SData[(length.fit + 1):nrow(SData),]
 average_scores = average_score(CoVaR_est, VaR_ins_est, test = test, level = level[2])
-colnames(ave_score) = c("log", "hr", "bilog", "alog", "t", "FP", "EVT_NZ")
+colnames(ave_score) = c("log", "hr", "alog", "t", "FP", "EVT_NZ")
 rownames(ave_score) = colnames(Losses)[-16]
 
 ### Traffic light matrix ######################
@@ -169,8 +87,8 @@ pick_out <- function(CoVaR_list, i){
 }
 
 M_01 <- diag(rep(NA, 7))
-colnames(M_01) = c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
-rownames(M_01) = c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
+colnames(M_01) = c("Log", "HR", "Alog","t", "FP", "EVT-NZ")
+rownames(M_01) = c("Log", "HR", "Alog","t", "FP", "EVT-NZ")
 M_05 <- M_10 <- Tn <- M_01
 for(i in 1:7){
   for(j in 1:7){
@@ -219,8 +137,8 @@ Ind_comparative.test <- function(VaR_fr, CoVaR_fr, CoVaR_fr_r,
 }
 Compute_M <- function(ins, plot = 10){
   M_01 <- diag(rep(NA, 7))
-  colnames(M_01) = c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
-  rownames(M_01) = c("Log", "HR", "Bilog", "Alog","t", "FP", "EVT-NZ")
+  colnames(M_01) = c("Log", "HR", "Alog","t", "FP", "EVT-NZ")
+  rownames(M_01) = c("Log", "HR", "Alog","t", "FP", "EVT-NZ")
   M_05 <- M_10 <- Tn <- M_01
   for(i in 1:7){
     for(j in 1:7){
@@ -229,7 +147,7 @@ Compute_M <- function(ins, plot = 10){
         re = Ind_comparative.test(VaR_fr = VaR_output[,ins], CoVaR_fr = CoVaR_output[[ins]][,i], 
                                   CoVaR_fr_r = CoVaR_output[[ins]][,j], 
                                   test_ins = Losses[3001:5534,ins], 
-                                  test_sys = Losses[3001:5534,"^GSPC"])
+                                  test_sys = Losses[3001:5534,"GSPC"])
         M_01[i,j] = re[1]
         M_05[i,j] = re[2]
         M_10[i,j] = re[3]
@@ -256,3 +174,190 @@ Compute_M <- function(ins, plot = 10){
 }
 
 Compute_M("UNM")
+
+
+####### Below is the procedure to select "best" k2 for the proposed method
+####### Same procedure is applied to NZ method to select "best" k2
+
+####### Apply GARCH filtering ###################
+filter_all = function(dat, model = "sGARCH"){
+  ### this function applies GARCH filtering to all 51 samples with size 3000
+  innos <- matrix(0, nrow = 3000, ncol = length(begin))
+  coef_est <- matrix(0, ncol = 7, nrow = length(begin))
+  mean_f <- sigma_f <- NA
+  for(i in 1:length(begin)){
+    start <- begin[i]
+    end <- begin[i] + 2999 + 50
+    if(end > length(dat)) end <- length(dat)
+    filter_re <- tryCatch(filtering(dat[start:end], forecast = TRUE, n_out = (end-start-2999), 
+                                    model = model),
+                          error = function(e){
+                            filtering(dat[start:end], forecast = TRUE, 
+                                      n_out = (end-start-2999), 
+                                      model = "sGARCH")})
+    innos[,i] <- filter_re$residuals
+    coef_est[i,] <- filter_re$coef
+    mean_f <- c(mean_f, filter_re$mean.forecast)
+    sigma_f <- c(sigma_f, filter_re$sigma.forecast)
+    print(i)
+  }
+  mean_f <- mean_f[-1]
+  sigma_f <- sigma_f[-1]
+  return(list(innovations = innos, coef = coef_est,
+              mean.forecasts = mean_f, sigma.forecasts = sigma_f))
+}
+
+cl <- parallel::makeCluster(getOption('cl.cores', 6))
+doParallel::registerDoParallel(cl)
+filter_result <- foreach(j=1:ncol(Losses), .export = ls(envir = globalenv()), 
+                         .packages=c('rugarch'), .errorhandling = "pass") %dopar% 
+  filter_all(Losses[,j])
+stopCluster(cl)
+names(filter_result) <- colnames(Losses)
+
+####### M-estimation ############################
+m_group <-  round(c(0.09, 0.14, 0.08, 0.03)*3000)
+dist_group <- c("log", "hr", "alog", "t")
+
+M_est_allinnos <- function(ins, sys, dist, m){
+  ### This function do M-estimation for all 51 samples with size 3000 for an ins
+  cl <- parallel::makeCluster(getOption('cl.cores', 6))
+  doParallel::registerDoParallel(cl)
+  M_est <- foreach(i = 1:ncol(ins), .export = ls(envir = globalenv()), 
+                   .combine = rbind,
+                   .packages=c('rugarch'), .errorhandling = "pass") %dopar% 
+    M_estimate(X = cbind(ins[,i], sys[,i]), family = dist, m = m)
+  stopCluster(cl)
+  return(M_est)
+}
+
+M_result = list()
+for(j in 1:num_ins){
+  re = list()
+  for(s in 1:length(dist_group)){
+    re[[s]] = M_est_allinnos(ins = filter_result[[j]]$innovations, sys = filter_result[["GSPC"]]$innovations,
+                             dist = dist_group[s], m = m_group[s])
+    names(re) = dist_group
+  }
+  M_result[[j]] = re
+  names(M_result) = names(filter_result)[1:j]
+}
+rm(re, j, s)
+
+
+####### Estimate VaR_Y with different k2 ######
+k1 = 150
+tail_sys = rep(NA, length(begin))
+for (i in 1:length(tail_sys)){
+  tail_sys[i] = tail_estimate(filter_result[["GSPC"]]$innovations[,i], k = 150)
+}
+
+
+k2_seq = seq(200, 300, 10)
+VaR_sys = matrix(NA, nrow = length(begin), ncol = length(k2_seq))
+for (i in 1:nrow(VaR_sys)){
+  for (j in 1:ncol(VaR_sys))
+    VaR_sys[i, j] = Qvar_esti(dat = filter_result[["GSPC"]]$innovations[,i], 
+                              gamma = tail_sys[i], 
+                              k = k2_seq[j], p = level[2])
+}
+
+####### Estimate CoVaR with different VaR_Y ######
+get_CoVaR <- function(ins, sys, VaR_sys, tail_sys, M_re, 
+                      dist_group, level){
+  
+  re <- matrix(0, ncol = length(dist_group), nrow = ncol(ins))
+  
+  for(i in 1:ncol(ins)){
+    
+    eta_est <- rep(0, length(dist_group))
+    
+    for(j in 1:length(dist_group)){
+      
+      eta_est[j] <- eta_estimate(par_hat = as.numeric(M_re[[j]][i,]), 
+                                 p = level, 
+                                 family = dist_group[j])
+      
+    }
+    
+    re[i,] <- VaR_sys[i]*(eta_est)^(-tail_sys[i])
+    
+  }
+  colnames(re) <- dist_group
+  return(re)
+}
+
+get_CoVaR_seq <- function(ins, sys, VaR, tail, M_est){
+  Log = HR = Alog = t = matrix(NA, nrow = nrow(VaR), ncol = ncol(VaR))
+  for(i in 1:ncol(VaR)){
+    re = get_CoVaR(ins = ins, sys = sys, VaR_sys = VaR[i,], 
+                   tail_sys = tail,
+                   M_re = M_est, dist_group = dist_group, 
+                   level = c(0.02,0.05))
+    Log[,i] <- re[,1]
+    HR[,i] <- re[,2]
+    Alog[,i] <- re[,3]
+    t[,i] <- re[,4]
+  }
+  return(list(Log = Log, HR = HR, Alog = Alog, t = t))
+}
+
+cl <- parallel::makeCluster(getOption('cl.cores', 6))
+doParallel::registerDoParallel(cl)
+all_CoVaR <- foreach(i=1:num_ins, .export = ls(envir = globalenv()), 
+                     .packages=c('evir', 'Matrix', 'MASS', 'sn', 'cubature'), 
+                     .errorhandling = "pass") %dopar% 
+  get_CoVaR_seq(ins = filter_result[[i]]$innovations, 
+                sys = filter_result[["GSPC"]]$innovations,
+                VaR = VaR_sys, tail = tail_sys, 
+                M_est = M_result[[i]])
+stopCluster(cl)
+names(all_CoVaR) = names(M_result)
+
+####### Get score for CoVaR at different k2 ######
+
+get_score <- function(CoVaR_est, VaR_ins, mean.f.sys, se.f.sys,
+                      mean.f.ins, se.f.ins, test){
+  ave_score = rep(NA, ncol(CoVaR_est))
+  if(is.null(ncol(VaR_ins))){
+    VaR_org = rep(VaR_ins, each = 50)[1:length.out]*se.f.ins + mean.f.ins
+  }
+  for(i in 1:ncol(CoVaR_est)){
+    CoVaR_org = rep(CoVaR_est[,i], each = 50)[1:length.out]*se.f.sys + mean.f.sys
+    
+    if(!is.null(ncol(VaR_ins))){
+      VaR_org = rep(VaR_ins[,i], each = 50)[1:length.out]*se.f.ins + mean.f.ins
+    }
+    
+    ave_score[i] = average_score(forecast_CoVaR = matrix(CoVaR_org, ncol = 1), 
+                                 forecast_VaR = VaR_org, test = test, level = 0.05)
+  }
+  return(ave_score)
+}
+
+ave_score = list()
+for(i in 1:num_ins){
+  ## for each institution
+  ins_name = colnames(Losses)[i]
+  score_re = list()
+  for(j in 1:length(dist_group)){
+    ## for each parametric model
+    score_mat = matrix(NA, nrow = length(seq_k), ncol = length(seq_k))
+    for(s in 1:length(seq_k)){
+      score_mat[,s] = get_score(CoVaR_est = all_CoVaR[[i]][[j]], 
+                                VaR_ins = all_tail_VaR[[i]]$VaR[,s],
+                                mean.f.sys = filter_result[["GSPC"]]$mean.forecasts, 
+                                se.f.sys = filter_result[["GSPC"]]$sigma.forecasts,
+                                mean.f.ins = filter_result[[i]]$mean.forecasts,
+                                se.f.ins = filter_result[[i]]$sigma.forecasts,
+                                test = Losses[3001:nrow(Losses),c(ins_name,"GSPC")])
+    }
+    score_re[[j]] = score_mat
+  }
+  names(score_re) = dist_group
+  ave_score[[i]] = score_re
+}
+names(ave_score) = select
+rm(score_re, i, j, score_mat, s)
+
+### we minimize above score to select "best" k2
