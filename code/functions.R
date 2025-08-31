@@ -263,7 +263,7 @@ eta_estimate = function(par_hat, p, family){
 ##         p: a bivariate vector of the risk level
 ##         (the first for VaR, the second for CoVaR)
 ################################################################
-covar_est = function(Data, par_hat = NULL, group = NULL, m = NULL, k, p){
+CoVaR_est = function(Data, par_hat = NULL, group = NULL, m = NULL, k, p){
   
   eta_est = rep(0, length(group))  ### a vector of eat estimates
   
@@ -289,12 +289,12 @@ covar_est = function(Data, par_hat = NULL, group = NULL, m = NULL, k, p){
   
   sys_tail = tail_estimate(dat = Data[,2], k=k[1])
   
-  VaR_est = Qvar_esti(dat = Ddata[,2], gamma = sys_tail, 
+  VaR_est = Qvar_esti(dat = Data[,2], gamma = sys_tail, 
                       k = k[2], p = p[2])
   
-  covar_est = VaR_est*(eta_est)^(-sys_tail)
+  covar_hat = VaR_est*(eta_est)^(-sys_tail)
   
-  return(covar_est)
+  return(covar_hat)
 }
 
 
@@ -448,7 +448,7 @@ CoVaR_EVT = function(x, q, fit, VaR){ # x is CoVaR
   z_EVT =  tmp_value_EVT[2] / tmp_value_EVT[1] - fit$EVT[3]
   theorm_EVT = 1-Thrm4_1(z_EVT, fit$EVT[1], fit$EVT[2], fit$EVT[3], fit$EVT[4])
   return( (theorm_EVT - q)^2*10^10 )
-}  ## fit =  New_cov_update(Z)
+}
 
 ################################################################
 #### Calculate CoVaR for Skew-T method
@@ -477,23 +477,23 @@ CoVaR_Skew = function (x, VaR, xi, Omega, alpha, nu, p) {
 ################################################################
 CoVaR_FP = function(Data, fit_par = NULL, VaR = NULL, level){
   if(is.null(VaR)){
-    nu=coef(garch11.fit)["shape"]; ga=coef(garch11.fit)["skew"]
+    nu=fit_par["shape"]; ga=fit_par["skew"]
     VaR = qdist("sstd",p=1-level[1],mu=0,sigma=1,shape=nu,skew=ga)
   }
   
   ##### Parametric method ###########
   fit_skew = mst.mle(y = Data)$dp
   
-  try(tmp_Skew=as.numeric(nlminb(start=4, objective=CoVaR_Skew,VaR = VaR, 
+  tmp_Skew=as.numeric(nlminb(start=4, objective=CoVaR_Skew,VaR = VaR, 
                                   xi = fit_skew$beta, Omega = fit_skew$Omega,
                                   alpha = fit_skew$alpha, nu = fit_skew$df,
-                                  p = level)$par))
+                                  p = level)$par)
   
   return(tmp_Skew)
 }
 
 CoVaR_NZ = function(Data, VaR = NULL, k = NULL, level){
-  tmp= NA
+  tmp = NA
   
   if(is.null(VaR)){
     VaR = VaR_estimate(dat = Data[,1], k, p = level[1])
@@ -501,8 +501,8 @@ CoVaR_NZ = function(Data, VaR = NULL, k = NULL, level){
   
   fit =  New_cov_update(Data)
   
-  try(tmp = as.numeric(nlminb(start=tmp_Skew, objective=CoVaR_EVT,q = level[2], 
-                               fit = fit, VaR = as.numeric(VaR))$par))
+  tmp = as.numeric(nlminb(start=4, objective=CoVaR_EVT,q = level[2], 
+                               fit = fit, VaR = as.numeric(VaR))$par)
   
   return(tmp)
 }
