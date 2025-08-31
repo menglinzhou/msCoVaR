@@ -1,0 +1,244 @@
+\appendix
+\def\thesection{Appendix \Alph{section}}
+\def\thetheorem{\Alph{section}.\arabic{theorem}}
+\setcounter{equation}{0}
+\renewcommand{\theequation}{A.\arabic{equation}}
+
+\setcounter{page}{1}
+
+%\begin{center}
+%    {\LARGE Tail risk in the tail: Estimating high quantiles when a related variable is extreme\\
+%  \bf Appendix\\
+%  }
+%\end{center}
+%\change{CZ: I adapted the proofs for the general CoVaRs. The cross reference is not yet correct.}
+
+\section{Proof of Theorems \ref{main theorem}}
+\label{appen_proofA}
+Recall the definition of $\h_\pb$:
+$$\h_\pb = \dfrac{\pbb\bigl(Y\ge Q_{Y|X}(p_2|p_1)\bigr)}{\pbb\bigl(Y\ge Q_{Y|X}(p_2|p_1)\mid X\ge Q_X(p_1)\bigr)}\in(0,1],\qquad p_1,p_2\in(0,1).$$
+We can then rewrite the ratio $\frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)}$ as 
+\begin{align*}
+    \frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)} &=\frac{\left(\h_\pb^*\right)^{-\hat\gamma}\widehat{Q}_Y(p_2)}{Q_Y(p_2\h_\pb)}\\
+    &=\left(\frac{\h_\pb^*}{\h_\pb}\right)^{-\hat\gamma}\times \h_\pb^{\gamma-\hat\gamma
+    } \times \frac{\widehat{Q}_Y(p_2)}{Q_Y(p_2)} \times\frac{\left(\h_\pb\right)^{-\gamma}Q_Y(p_2)}{Q_Y(p_2\h_\pb)} \\
+    &=:I_1\times I_2\times I_3\times I_4.
+\end{align*}
+The theorem is proved by showing that, as $n\to\infty$, $I_j\top1$ for $j=1,2,3,4$. 
+
+Before handling these four terms, the following two lemmas provide some preliminary results regarding the quantities $\h_\pb$ and $\h^*_\pb$ as well as the estimator $\hat\h^*_\pb$.
+
+\begin{lemma} \label{lem:eta* and hat eta*}
+    Under the same conditions as in Theorem \ref{main theorem}, we have that, as $n\to\infty$,
+$$\frac{p_1}{\h^*_\pb}\to R_2(1,0;\thb_0) \text{\ and \ }\frac{p_1}{\hat\h^*_\pb}\top R_2(1,0;\thb_0).$$
+\end{lemma}
+\begin{lemma} \label{lem:eta and eta*}
+    Under the same conditions as in Theorem \ref{main theorem}, we have, as $n\to\infty$,
+    $$\frac{\h_\pb}{\h^*_\pb}\to1.$$
+\end{lemma}
+\begin{proof}[Proof of Lemma \ref{lem:eta* and hat eta*}]
+In order to prove the limit relation regarding $\h^*_\pb$, we first show that as $n\to\infty$, $\h^*_\pb\to 0$. If otherwise, then there exists a subsequence of integers, $\{n_l\}$ such that $\h^*_{\pb(n_l)}\to c'>0$ as $l\to\infty$. W.l.o.g., we still use the notation $n$ instead of $n_l$. Then, as $n\to\infty$, $R\left(1,\h^*_\pb\frac{p_2}{p_1};\thb_0\right)\to R\left(1,\frac{c'}{c};\thb_0\right)>0$ which follows from $\frac{p_1}{p_2}\to c$ in \ref{con:p} and the fact that $R(1,y;\thb_0)$ is a non-decreasing function in $y$. However, this contradicts with $R\left(1,\h^*_\pb\frac{p_2}{p_1};\thb_0\right)=p_2\to 0$ as $n\to\infty$. Hence, we conclude that $\h^*_\pb\to 0$ as $n\to\infty$.
+
+Using the mean value theorem, we have that there exists a series of constants $\xi_n\in[0, \h^*_\pb\frac{p_2}{p_1}]$ such that
+$$
+p_2=R\left(1,\h^*_\pb\frac{p_2}{p_1};\thb_0\right)=R(1,0;\thb_0)+\h^*_\pb\frac{p_2}{p_1} R_2(1,\xi_n;\thb_0)=\h^*_\pb\frac{p_2}{p_1} R_2(1,\xi_n;\thb_0).
+$$
+Hence we get that, as $n\to\infty$,
+$$\frac{p_1}{\h^*_\pb}=R_2(1,\xi_n;\thb_0)\to R_2(1,0;\thb_0).$$
+Here in the last step, we use the fact that $\xi_n\to 0$ as $n\to\infty$ and $R_2(x,y;\thb_0)$ is a continuous function at $(1,0;\thb_0)$.
+
+The proof for the limit relation regarding $\hat\h^*_\pb$ follows similarly by replacing $\thb_0$ with $\hat\thb$ and using the fact that $\hat\thb\top\thb_0$ as $n\to\infty$. We therefore omit the details.
+\end{proof}
+
+
+\begin{proof}[Proof of Lemma \ref{lem:eta and eta*}]
+    We first show that, as $n\to\infty$, $\h_\pb\to 0$. If assuming otherwise, there exists a subsequence of integers, $\{n_l\}$ such that $\h_{\pb(n_l)}\to c>0$ as $l\to\infty$. W.l.o.g., we still use the notation $n$ instead of $n_l$. Recall the definition of $\h_\pb$:
+    $$\frac{\pbb(X>Q_X(p_1),Y>Q_Y(p_2\h_\pb))}{p_1}=p_2.$$
+    By taking $n\to\infty$ on both sides of this equation, and using the assumption $\h_\pb\to c'>0$ together with $\frac{p_1}{p_2}\to c$ as $n\to\infty$, we get that
+    $R(1,\frac{c'}{c};\thb_0)=0$, which contradicts \ref{con:R2} and the fact that $R(1,y;\thb_0)$ is a non-decreasing function in $y$. Hence, we conclude that, as $n\to\infty$, $\h_\pb\to 0$.
+    
+    
+Next we show, by contradiction, that 
+$$\limsup_{n\to\infty}\frac{\h_\pb}{\h^*_\pb}\leq 1.$$
+If assuming otherwise, there exists a subsequence of $n$, $\{n_l\}_{l=1}^\infty$ such that as $l\to\infty$, $n_l\to\infty$ and
+$$\frac{\h_{\pb(n_l)}}{\h^*_{\pb(n_l)}}\to c'>1.$$
+W.l.o.g., we still use the notation $n$ for the subsequence, and omit it by writing $\pb=\pb(n)$. Therefore, for any $1<\tilde c<c$, there exists $n_0=n_0(\tilde c)$ such that for $n>n_0$, $\frac{\h_\pb}{\h^*_\pb}>\tilde c.$
+
+Note that $\h_\pb>\tilde c \h^*_\pb>\h^*_\pb$. By the mean value theorem, we get that for each $n$, there exists $\xi_n\in\left(\frac{p_2}{p_1}\h^*_\pb,\frac{p_2}{p_1}\h_\pb\right)$ such that 
+\begin{equation} \label{eq:compare eta and eta*}
+R\left(1,\frac{p_2}{p_1}\h_\pb;\thb_0\right) -R\left(1,\frac{p_2}{p_1}\h^*_\pb;\thb_0\right) =R_2(1,\xi_n;\thb_0)\frac{p_2}{p_1}(\h_\pb-\h^*_\pb).
+\end{equation}
+As $n\to\infty$, since both $\h^*_\pb\to 0$ and $\h_\pb\to 0$ hold, we get $\xi_n\to 0$. Further note that $\h_\pb-\h^*_\pb>(\tilde c-1)\h^*_\pb$. By applying Lemma \ref{lem:eta* and hat eta*} and the continuity of $R_2(x,y;\thb)$ at $(1,0;\thb_0)$, we get that 
+\begin{align*}
+\liminf_{n\to\infty}\frac{R\left(1,\frac{p_2}{p_1}\h_\pb;\thb_0\right) -p_2}{p_1}&=\liminf_{n\to\infty}\frac{R\left(1,\frac{p_2}{p_1}\h_\pb;\thb_0\right) -R\left(1,\h^*_\pb\frac{p_2}{p_1};\thb_0\right)}{p_1}\\
+&=\liminf_{n\to\infty}\frac{R\left(1,\frac{p_2}{p_1}\h_\pb;\thb_0\right) -R\left(1,\frac{p_2}{p_1}\h^*_\pb;\thb_0\right)}{\h^*_\pb}\times\frac{\h^*_\pb}{p_1}\\
+&\geq R_2(1,0;\thb_0)\frac{\tilde c-1}{c}\times \frac{1}{R_2(1,0;\thb_0)}=\frac{\tilde c-1}{c}>0.
+\end{align*}
+Since \ref{con:soc for R} holds with $\tilde\rho>1$, we get that
+\begin{align*}
+    \lim_{n\to\infty}\frac{R\left(1,\frac{p_2}{p_1}\h_\pb;\thb_0\right) -p_2}{p_1}&=\lim_{n\to\infty}\frac{1}{p_1}\left(R\left(1,\frac{p_2}{p_1}\h_\pb;\thb_0\right)-\frac{1}{p_1}\pbb\left(X>Q_X(p_1),Y>Q_Y\left(p_1\cdot\frac{p_2}{p_1}\h_\pb\right)\right)\right)\\
+    &=0.  
+\end{align*}
+The two limit relations contradict each other. Therefore, we conclude that $$\limsup_{n\to\infty}\frac{\h_\pb}{\h^*_\pb}\leq 1.$$
+Similarly, one can show a lower bound for $\frac{\h_\pb}{\h^*_\pb}$, which completes the proof of the lemma.
+\end{proof}
+
+Now we turn to prove the main theorem by handling the four terms $I_j$, $j=1,2,3,4$.
+
+Firstly, we handle $I_1$. Following the asymptotic property of the Hill estimator (e.g., Theorem 3.2.5 in \cite{dHF2006_sup}), \ref{con:soc} and \ref{con:k} for $k_1$ imply that as $n\to\infty$, 
+\begin{equation}\label{eq:asymptotic Hill}
+    \sqrt{k_1}(\hat\gamma-\gamma)\stackrel{d}{\to} \NC\left(\frac{\lambda_1}{1-\rho},\gamma^2\right),
+\end{equation}
+which implies that
+$\hat\gamma\top \gamma$. Together with Lemma \ref{lem:eta and eta*} and Lemma \ref{lem:eta* and hat eta*}, we conclude that $I_1\top 1$ as $n\to\infty$.
+
+Secondly, we handle $I_2$. Given the limit relation in \eqref{eq:asymptotic Hill}, we only need to show that $\log (\h_\pb)/\sqrt{k_1}\to 0$ as $n\to\infty$. From Lemma \ref{lem:eta* and hat eta*} and Lemma \ref{lem:eta and eta*}, we get that $\h_\pb/p_1\to 1/R_2(1,0,\thb_0)$ as $n\to\infty$. Together with the limit relation regarding $k_1$ in \ref{con:k}, we get that $I_2\top 1$ as $n\to\infty$.
+
+The term $I_3$ is handled by the asymptotic property of the high quantile estimator; see, e.g. Theorem 4.3.8 in \cite{dHF2006_sup}. More specifically, under \ref{con:soc}, \ref{con:k} and \ref{con:p}, the high quantile estimator in Section~\ref{method:est} has the following asymptotic property: as $n\to\infty$,
+$$ \min\left(\sqrt{k_2},\frac{\sqrt{k_1}}{\log (k_2/np_2)}\right)\left(\frac{\widehat{Q}_Y(p_2)}{Q_Y(p_2)}-1\right)=O_P(1). $$
+The result follows from the proof of Theorem 4.3.8 in \cite{dHF2006_sup} with some proper adaptations. A direct consequence is that $I_3\top1$ as $n\to\infty$.
+
+Finally, we handle the deterministic term $I_4$. Notice that $Q_Y(p_2)=U_Y(1/p_2)$ and $Q_Y(p_2\h_\pb)=U_Y(1/(p_2\h_\pb))$. By applying \ref{con:soc} with $t=1/p$ and $x=1/\h_\pb$, we get that
+$$\lim_{n\to\infty}\frac{\frac{Q_Y(p_2\h_\pb)}{Q_Y(p_2)}\h_\pb^\gamma-1}{A(1/p)}=-\frac{1}{\rho}.$$
+As $n\to\infty$, since $A(1/p)\to0$ we get that $I_4\to 1$.
+\qed
+
+%\change{CZ: Here is the old proof. We should delete it.}
+%\begin{proof}[Proof of Theorem \ref{main theorem: general CoVaR}]
+%    Write
+%    \begin{align*}
+%        \frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)} &=\left(\frac{\hat\eta_\pb^*}{\eta_\pb}\right)^{-\hat\gamma}\times \eta_\pb^{\gamma-\hat\gamma
+%        } \times \frac{\widehat{Q}_Y(p_2)}{Q_Y(p_2)} \times\frac{\left(\eta_\pb\right)^{-\gamma}Q_Y(p_2)}{Q_Y(p_2\eta_\pb)} \\
+%        &=:I_1\times I_2\times I_3\times I_4.
+%    \end{align*}
+%    
+%    The main difference lies in verifying that  Lemma \ref{lem:eta* and hat eta*} and \ref{lem:eta and eta*} hold with replacing $\eta^*_p$, $\hat\eta^*_p$ and $p$ by $\eta^*_\pb$, $\hat\eta^*_\pb$ and $p_1$, respectively. That is, as $n\to\infty$,
+%    $$\frac{p_1}{\eta^*_\pb}\to R_2(1,0;\thb_0) \text{\ and \ } \frac{p_1}{\hat\eta^*_\pb}\to R_2(1,0;\thb_0); \:\:\:\frac{\eta_\pb}{\eta^*_\pb}\to 1.$$
+%    These results guarantees that both $I_1\top 1$ and $I_2\top 1$ as $n\to\infty$. Together with the consistency results for $I_3$ and $I_4$, the theorem is proved.
+%\end{proof}
+
+%%%%
+\section{Proof of Theorems \ref{main_theorem_asymptotic_normality} } \label{appen_proofB}
+%    \change{We should change the title. Maybe
+%         Theorem \ref{main_theorem_asymptotic_normality} refers to the general case now? If so, we can remove Theorem \ref{main_theorem_asymptotic_normality: general CoVaR} from the title of the section.}
+
+    Similar to the proof of consistency, using the notation $Q_Y(p)=U_Y(1/p)$, we  write the ratio $\frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)}$ as 
+    \begin{align*}
+        \frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)} &=\frac{\left(\hat\h_\pb^*\right)^{-\hat\gamma}\widehat{Q}_Y(p_2)}{Q_Y(p_2\h_\pb)}\\
+        &=\left(\frac{\hat\h_\pb^*}{\h_\pb}\right)^{-\hat\gamma}\times \h_\pb^{\gamma-\hat\gamma
+        } \times \frac{\widehat{Q}_Y(p_2)}{Q_Y(p_2)} \times\frac{\left(\h_\pb\right)^{-\gamma}Q_Y(p_2)}{Q_Y(p_2\h_\pb)} \\
+        &=\left(\frac{\hat\h_\pb^*}{\h_\pb}\right)^{-\hat\gamma}\times \h_\pb^{\gamma-\hat\gamma
+        } \times \frac{Y_{n,n-k_2}}{U_Y\left(n/k_2\right)}\times \left(\frac{k_2}{np_2}\right)^{\hat\gamma -\gamma}\times \frac{U_Y\left(n/k_2\right)\left(\frac{k_2}{np_2}\right)^\gamma}{U_Y\left(1/p_2\right)} \times\frac{\left(\h_\pb\right)^{-\gamma}U_Y(1/p_2)}{U_Y(1/(p_2\h_\pb))} \\
+        &=\left(\frac{\hat\h_\pb^*}{\h_\pb}\right)^{-\hat\gamma}\times \exp\left\{\log \frac{k_2}{np_2\h_\pb}\cdot\left(\hat\gamma-\gamma\right)\right\} \times \frac{Y_{n,n-k_2}}{U_Y\left(n/k_2\right)}\times \frac{U_Y\left(n/k_2\right)\left(\frac{k_2}{np_2\h_\pb}\right)^\gamma}{U_Y(1/(p_2\h_\pb))} \\
+        &=:I_1\times I_2\times I_3\times I_4.
+    \end{align*}
+    The theorem is proved by handling the four terms separately.
+
+    We start with handling $I_2$. By Condtions A'-C' and the asymptotic normality of the Hill estimator, we get that
+    $$\frac{\sqrt{k_1}}{\log \frac{k_2}{np_2\h_\pb}}(I_2-1)\stackrel{d}{\to}\Gamma,$$
+    where $\Gamma\sim \NC\left(\frac{\lambda_1}{1-\rho},\gamma^2\right)$ is the asymptotic limit for the Hill estimator.
+    By Lemmas \ref{lem:eta* and hat eta*} and \ref{lem:eta and eta*}, we get that as $n\to\infty$,
+    $$\frac{p_1}{\h_\pb}\to R_2(1,0;\thb_0).$$
+    \ref{con:R2_an} ensures that $R_2(1,0;\thb_0)>0$. Since $p_1\to0$ as $n\to\infty$, we obtain that $\frac{\log \h_\pb}{\log p_1}\to 1$. This allows us to modify the speed of convergence and obtain that as $n\to\infty$,
+$$\frac{\sqrt{k_1}}{\log \frac{k_2}{np_1p_2}}(I_2-1)\stackrel{d}{\to}\Gamma.$$
+
+    Next, we handle $I_3$. By Conditions A'-C', we have that as $n\to\infty$
+    $$\sqrt{k_2}\left(I_{3}-1\right)\stackrel{d}{\to} B,$$
+    where $B\sim \NC(0,\gamma^2)$. In addition, $\text{cov}(B,\Gamma)\neq 0$ if and only if $k_2/k_1\to c\in (0,1)$. In all other cases, $\text{cov}(B,\Gamma)=0$.  Note that, if $k_2/k_1\to c\in (0,1)$, $r=\infty$ and $s_n=\frac{\sqrt{k_1}}{\log \frac{k_2}{np_1p_2}}$.
+
+    Next, we handle $I_4$, which is a deterministic term. Similar to handling the $I_4$ term in the proof of Theorem \ref{main theorem}, we get that as $n\to\infty$,
+    $$I_4-1\sim \frac{1}{\rho}A\left(\frac{n}{k_2}\right).$$ Therefore, we have $\sqrt{k_2}(I_4-1)\to \frac{\lambda_2}{\rho}$ as $n\to\infty$.
+
+    To handle $I_1$, we need the following two lemmas. They are improved versions of Lemmas \ref{lem:eta* and hat eta*} and \ref{lem:eta and eta*}, respectively. Their proofs are further postponed to the end of this section.
+    \begin{lemma} \label{lem:eta* and hat eta* improved} Under the same conditions as in Theorem \ref{main_theorem_asymptotic_normality}, we have that, as $n\to\infty$,
+        \begin{align*}
+            &s_n\left(\frac{p_1}{\h_\pb^*}-R_2(1,0;\thb_0)\right)\to 0;\\
+            &s_n\left(\frac{p_1}{\hat \h_\pb^*}-R_2(1,0;\hat \thb)\right)\top 0.
+        \end{align*}
+    \end{lemma}
+    \begin{lemma} \label{lem:eta and eta* improved}
+        Under the same conditions as in Theorem \ref{main_theorem_asymptotic_normality}, we have that, as $n\to\infty$,
+        $$s_n\left(\frac{\h_\pb}{\h_\pb^*}-1\right)\to 0.$$
+    \end{lemma}
+    
+    Finally, we use the two Lemmas to handle $I_1$. Lemma \ref{lem:eta* and hat eta* improved} implies that 
+    $$s_n\left(\frac{\h_\pb^*}{\hat \h_\pb^*}-\frac{R_2(1,0;\hat \thb)}{R_2(1,0;\thb_0)}\right)\top 0.$$
+    Following \cite{Einmahl_etal2012_sup}, based on Conditions D' and E', we have that as $n\to\infty$ 
+    $$\sqrt{m}\Vert \hat\thb -\thb_0\Vert_1 =O_P(1).$$
+    Since $s_n\leq \sqrt{k_2}$ and $k_2/m\to 0$ (\ref{con:R2_an_for theta}), as $n\to\infty$, we get that
+    $$s_n\Vert \hat\thb -\thb_0\Vert_1 =o_P(1).$$
+    Together with the fact that $R_2(1,0,\thb_0)>0$ (\ref{con:R2_an}) and $R_2(1,0,\thb)$ is 1-Lipschitz continuous in the neighborhood of $\thb_0$ (\ref{con:R2_an_for theta}), we get that as $n\to\infty$,
+    $$s_n\left(\frac{R_2(1,0;\hat \thb)}{R_2(1,0;\thb_0)}-1\right)\top 0, $$ %\stackrel{P}{\to}
+    which further implies that
+    $$s_n\left(\frac{\h_\pb^*}{\hat \h_\pb^*}-1\right)\top 0.$$
+    Combining with Lemma \ref{lem:eta and eta* improved}, we get that as $n\to\infty$
+    $$s_n\left(\frac{\h_\pb}{\hat \h_\pb^*}-1\right)\top 0,$$
+    which implies that $s_n(I_1-1)\top 0$.
+
+    Combining the four terms $I_j, j=1,2,3,4$, we get that, as $n\to\infty$, if $r\leq 1$, then $s_n=\sqrt{k_2}$ and
+    $$s_n\left( \frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)}- 1\right)\stackrel{d}{\to}r\Gamma+B+\frac{\lambda_2}{\rho};$$
+    if $r\geq 1$, then $s_n=\frac{\sqrt{k_1}}{\log \frac{k_2}{np_1p_2}}$ and
+    $$s_n\left( \frac{\widehat{Q}_{Y|X}(p_2|p_1)}{Q_{Y|X}(p_2|p_1)}-1\right)\stackrel{d}{\to}\Gamma+\frac{1}{r}B+\frac{\lambda_2}{r\rho}.$$
+    Note that we can regard $\text{cov}(\Gamma,B)=0$ since the only non-zero case occurs for $r=+\infty$, where the term $\frac{1}{r}B$ vanishes. The bias and variance follow from straightforward calculations.
+
+    In the calculation, it is worth noticing that if $r<+\infty$, $k_2/k_1\to 0$ as $n\to\infty$. In this case, given that $\lambda_1$ is finite, we have $\lambda_2=0$. In addition, if $r=+\infty$, the term $\frac{\lambda_2}{r\rho}$ vanishes.
+\qed
+
+
+\begin{proof}[Proof of Lemma \ref{lem:eta* and hat eta* improved}]
+    Since $R\left(1,\frac{p_2}{p_1}\h^*_\pb;\thb_0\right) =p_2$, by \ref{con:R2_an}, we get that as $n\to\infty$,
+    $$\frac{p_1}{\h^*_\pb}-R_2(1,0;\thb_0)=O((\h^*_\pb)^{\breve{\rho}(\thb_0)})=O(p_1^{\breve{\rho}(\thb_0)}),$$
+    where the last step follows from Lemma \ref{lem:eta* and hat eta*}. The first limit relation follows immediately from \ref{con:R2_an}. The second relation follows similarly with replacing $\thb_0$ by $\hat\thb_0$. The only difference is that to guarantee that $s_np_1^{\breve{\rho}(\hat\thb)}\top 0$, we need the fact that $\hat\thb$ is a consistent estimator of $\thb_0$, $\breve{\rho}(\cdot)$ is a continuous function at $\thb_0$ and $s_np_1^{\breve{\rho}(\thb_0)-\varepsilon}\to 0$ as $n\to\infty$.
+\end{proof}
+
+\begin{proof}[Proof of Lemma \ref{lem:eta and eta* improved}]
+    The proof is similar to that of Lemma \ref{lem:eta and eta*}, but simpler. Recall Equation~\eqref{eq:compare eta and eta*} in the proof of Lemma \ref{lem:eta and eta*}:
+    $$R_2(1,\xi_n;\thb_0)\frac{p_2}{p_1}(\h^*_\pb-\h_\pb)=R\left(1,\frac{p_2}{p_1}\eta^*_p,\thb_0\right)-R\left(1,\frac{p_2}{p_1}\h_\pb,\thb_0\right)=p_2-R\left(1,\frac{p_2}{p_1}\h_\pb,\thb_0\right).$$
+    Therefore, we get
+    \begin{align*}
+        s_n\left(\frac{\eta^*_p}{\h_\pb}-1\right)&=\frac{1}{R_2(1,\xi_n;\thb_0)}\cdot \frac{p_1}{\h_\pb} \cdot s_n \frac{p_2-R\left(1,\frac{p_2}{p_1}\h_\pb,\thb_0\right)}{p_2}\\
+        &=I_1\cdot I_2\cdot I_3.
+    \end{align*}
+    As $n\to\infty$, $I_1\to \frac{1}{R_2(1,0;\thb_0)}$ and $I_2=O(1)$ due to Lemmas \ref{lem:eta* and hat eta*} and \ref{lem:eta and eta*}. Hence we only need to show that $I_3\to 0$.
+
+    Recalling the definition of $\h_\pb$ and Condition E', we get that
+    $$p_2-R\left(1,\frac{p_2}{p_1}\h_\pb,\thb_0\right)=O((\h_\pb)^{\tilde \rho})=O(p_1^{\tilde \rho}),$$
+    which implies that $I_3=O(s_n p_1^{\tilde\rho-1})\to 0$ as $n\to\infty$ due to Condition F'.
+\end{proof}
+
+
+%\change{CZ: Here is the old proof that should be removed. But be careful with the cross-reference.}
+%\begin{proof}[Proof of Theorem \ref{main_theorem_asymptotic_normality: general CoVaR}]
+%    The proof follows the same steps a that of Theorem \ref{main_theorem_asymptotic_normality: general CoVaR}. Here we list the main differences. Write
+%
+%    \begin{align*}
+%        \frac{\widehat{Q}_{Y|X}(p_1,p_2)}{Q_{Y|X}(p_1,p_2)} &=\left(\frac{\hat\eta_\pb^*}{\eta_\pb}\right)^{-\hat\gamma}\times \exp\left\{\log \frac{k_2}{np_2\eta_\pb}\cdot\left(\hat\gamma-\gamma\right)\right\} \times \frac{Y_{n,n-k_2}}{U_Y\left(n/k_2\right)}\times \frac{U_Y\left(n/k_2\right)\left(\frac{k_2}{np_2\eta_\pb}\right)^\gamma}{U_Y(1/(p_2\eta_\pb))} \\
+%        &=:I_1\times I_2\times I_3\times I_4.
+%    \end{align*}
+%    
+%    Obviously, the term $I_2$ has the following asymptotic property: as $n\to\infty$
+%    $$\frac{\sqrt{k_1}}{\log \frac{k_2}{np_1p_2}}(I_2-1)\stackrel{d}{\to}\Gamma,$$
+%    where $\Gamma$ is the same as that in the proof of Theorem \ref{main_theorem_asymptotic_normality}. Here we use the fact that $p_1/\eta_\pb \to 1$ as $n\to\infty$. The terms $I_3$ and $I_4$ have exactly the same asymptotic properties as the corresponding terms in the proof of Theorem \ref{main_theorem_asymptotic_normality}. The only remaining term to handle is $I_1$, which relies on a modified version of Lemma \ref{lem:eta* and hat eta* improved} and \ref{lem:eta and eta* improved} with replacing $\eta^*_p$, $\hat\eta^*_p$ and $p$ by $\eta^*_\pb$, $\hat\eta^*_\pb$ and $p_1$, respectively. That is, as $n\to\infty$,
+%    $$\tilde s_n\left(\frac{p_1}{\eta_\pb^*}-R_2(1,0;\thb_0)\right)\to 0,  \tilde s_n\left(\frac{p_1}{\hat \eta_\pb^*}-R_2(1,0;\hat \thb)\right)\top 0, \text{\ and \ }\tilde s_n\left(\frac{\eta_\pb}{\eta_\pb^*}-1\right)\to 0.$$
+%    They can be versified following the same steps as in the proofs of the two lemmas.
+%\end{proof}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{plainnat} 
+
+\begin{thebibliography}{29}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+  
+\bibitem[de~Haan and Ferreira(2006)]{dHF2006_sup}
+L.~de~Haan and A.~Ferreira.
+\newblock \emph{Extreme Value Theory: An Introduction}.
+\newblock Springer Science \& Business Media, 2006.
+
+\bibitem[Einmahl et~al.(2012)Einmahl, Krajina, and Segers]{Einmahl_etal2012_sup}
+J.H. Einmahl, A.~Krajina, and J.~Segers.
+\newblock An {M}-estimator for tail dependence in arbitrary dimensions.
+\newblock \emph{The Annals of Statistics}, 40:\penalty0 1764--1793, 2012.
+\end{thebibliography}
