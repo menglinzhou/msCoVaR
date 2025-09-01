@@ -10,5 +10,4 @@ This repository contains the code for replication of the results in the paper "T
   - `code_application.R`: The main code to conduct dynamic forecasting in Section 4.
 - The `manuscript` directory: contains the source files for the manuscript.
   - The `plots` directory: contains all figures in the manuscript.
-  - The `tex files` directory: contains the source tex files to generate the manuscript.
 - The `data` directory: contains original data (Snp500_dataset.csv) used in Section 4.
