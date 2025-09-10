@@ -1,6 +1,6 @@
 # Tail risk in the tail: Estimating high quantiles when a related variable is extreme
 
-This repository contains the code for replication of the results in the paper "Tail risk in the tail: Estimating high quantiles when a related variable is extreme" by Natalia Nolde, Chen Zhou and Menglin Zhou.
+This repository contains the code for replication of the results in the paper "Tail risk in the tail: Estimating high quantiles when a related variable is extreme".
 
 
 ## Files
