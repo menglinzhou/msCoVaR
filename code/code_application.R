@@ -10,7 +10,6 @@ source(path)
 
 ###### Loading data ############################
 Dat = fread(here::here("data", "Snp500_dataset.csv"))
-#Dat = fread(paste(path,"/data/Snp500_dataset.csv",sep=""))
 Dat$date = as.Date(Dat$date)
 Ldata = data.table(dcast(Dat,formula=date ~ symbol, value.var="price", drop = FALSE))
 Ldata$date = as.Date(Ldata$date)
