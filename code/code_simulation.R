@@ -1,7 +1,7 @@
 ####################################################################
 #### Simulation study ##############################################
-path = getwd()
-source(paste(path, "/code/functions.R", sep = ""))
+path = here::here("code", "functions.R")
+source(path)
 
 level = c(0.05,0.05)  ## (p1, p2)
 n = 3000  ## sample size
@@ -15,7 +15,7 @@ truepar = 0.6 ## true parameter
 data = data_generate(real = truepar, n, N, dist = dist)
 
 #### M estimation ##################################################
-m = 270 ## selected fllowing Einmahl et al. [2012], aiming at minimizing RMSE
+m = 270 ## selected following Einmahl et al. [2012], aiming at minimizing RMSE
 estpar = matrix(0, nrow = N, ncol = length(truepar))
 for(i in 1:N){
   D = matrix(data[,i], ncol = 2)

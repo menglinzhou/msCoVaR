@@ -263,7 +263,7 @@ eta_estimate = function(par_hat, p, family){
 ##         p: a bivariate vector of the risk level
 ##         (the first for VaR, the second for CoVaR)
 ################################################################
-CoVaR_est = function(Data, par_hat = NULL, group = NULL, m = NULL, k, p){
+CoVaR_estimate = function(Data, par_hat = NULL, group = NULL, m = NULL, k, p){
   
   eta_est = rep(0, length(group))  ### a vector of eat estimates
   

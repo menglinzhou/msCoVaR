@@ -1,14 +1,16 @@
 ##############################################################
-############## Dynamic forecast ########################
-path = getwd()
-source(paste(path, "/code/functions.R", sep = ""))
 ##############################################################
 library(data.table)
 library(timeSeries)
 library(PerformanceAnalytics)
 
+############## Dynamic forecast ########################
+path = here::here("code", "functions.R")
+source(path)
+
 ###### Loading data ############################
-Dat = fread(paste(path,"/data/Snp500_dataset.csv",sep=""))
+Dat = fread(here::here("data", "Snp500_dataset.csv"))
+#Dat = fread(paste(path,"/data/Snp500_dataset.csv",sep=""))
 Dat$date = as.Date(Dat$date)
 Ldata = data.table(dcast(Dat,formula=date ~ symbol, value.var="price", drop = FALSE))
 Ldata$date = as.Date(Ldata$date)
@@ -45,9 +47,8 @@ for(i in 1:length(begin)){
   
   Sinnos = cbind(Sfilter_ins$residuals, Sfilter_sys$residuals)
   
-  CoVaR_Z = CoVaR_est(Sinnos, group = dist_group, m = m_group, 
-                      k = c(k1,k2_sys[i]), 
-                       p = level) ## proposed method
+  CoVaR_Z = CoVaR_estimate(Sinnos, group = dist_group, m = m_group, 
+                      k = c(k1,k2_sys[i]), p = level) ## proposed method
   
   ## other two methods
   tail_ins_Z = tail_estimate(dat = Sinnos[,1], k=k1)
