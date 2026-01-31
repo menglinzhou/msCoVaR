@@ -50,9 +50,7 @@ covar_est = CoVaR_estimate(Data = residuals, group = c("t","alog"), m = c(200,20
 
 ## Quick reference - functions.R
 
-This file documents the main user-facing functions and suggested usage for the code in `code/functions.R`.
-
-It contains the R comment block recommended to help users distinguish high-level API functions from helpers.
+This section documents the main user-facing functions and suggested usage for the code in `code/functions.R`. It helps users distinguish high-level API functions from helpers.
 
 ### User-facing / Main functions
 ```r
