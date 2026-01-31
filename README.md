@@ -38,6 +38,7 @@ Example:
 resid_info <- filtering(my_returns$stock, forecast = FALSE)
 resid_matrix <- cbind(resid_info, filtering(my_returns$market, forecast = FALSE))
 covar_proposed <- CoVaR_estimate(resid_matrix, group = "t", m = 500, k = c(300,100), p = c(0.01, 0.05))
+```
 
 
 # Quick reference - functions.R
