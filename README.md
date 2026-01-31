@@ -17,16 +17,16 @@ This repository contains the code for replication of the results in the paper "T
 Recommended order to run the pipeline (fast path):
 
 1. Pre-filter returns (GARCH) to obtain standardized residuals:
-   - filtering(dat, forecast = FALSE)
+   - filtering(...)
 
 2. Estimate system tail index and VaR:
-   - sys_tail <- tail_estimate(dat = residuals[,2], k = <k_tail>)
-   - VaR_sys <- Qvar_esti(dat = residuals[,2], gamma = sys_tail, p = <p>, k = <k_var>)
+   - sys_tail <- tail_estimate(...)
+   - VaR_sys <- Qvar_esti(...)
 
 3. Estimate CoVaR:
-   - Proposed method: CoVaR_estimate(Data = residuals, group = c("t", "alog"), m = c(...), k = c(k_tail, k_var), p = c(p_VaR, p_CoVaR))
-   - Skew-t method: CoVaR_FP(Data, fit_par = NULL, VaR = NULL, level = c(p_VaR, p_CoVaR))
-   - Nolde & Zhang EVT: CoVaR_NZ(Data, VaR = NULL, k = NULL, level = c(p_VaR, p_CoVaR))
+   - Proposed method: CoVaR_estimate(...)
+   - Fully parametric method: CoVaR_FP(...)
+   - Nolde & Zhang EVT: CoVaR_NZ(...)
 
 4. Backtesting and comparison:
    - average_score(...)
@@ -35,9 +35,16 @@ Recommended order to run the pipeline (fast path):
 
 Example:
 ```r
-resid_info <- filtering(my_returns$stock, forecast = FALSE)
-resid_matrix <- cbind(resid_info, filtering(my_returns$market, forecast = FALSE))
-covar_proposed <- CoVaR_estimate(resid_matrix, group = "t", m = 500, k = c(300,100), p = c(0.01, 0.05))
+# 1) Pre-filter returns -> obtain standardized residuals:
+res_info = filtering(dat = my_returns, forecast = FALSE)
+residuals = res_info  # standardized residuals
+
+# 2) Estimate tail index and VaR for market (system):
+gamma_sys = tail_estimate(dat = residuals[,2], k = round(0.1 * nrow(residuals)))
+VaR_sys = Qvar_esti(dat = residuals[,2], gamma = gamma_sys, p = 0.05, k = round(0.01 * nrow(residuals)))
+
+# 3) Use CoVaR_estimate for proposed method:
+covar_est = CoVaR_estimate(Data = residuals, group = c("t","alog"), m = c(200,200),k = c(300,100), p = c(0.01, 0.05))
 ```
 
 
@@ -45,12 +52,10 @@ covar_proposed <- CoVaR_estimate(resid_matrix, group = "t", m = 500, k = c(300,1
 
 This file documents the main user-facing functions and suggested usage for the code in `code/functions.R`.
 
-It contains the R comment block recommended to help users distinguish high-level API functions from helpers and includes a short example workflow.
+It contains the R comment block recommended to help users distinguish high-level API functions from helpers.
 
+### User-facing / Main functions
 ```r
-################################################################
-# User-facing / Main functions
-#
 # These are the high-level functions most users will call directly:
 #
 #  - CoVaR_estimate(Data, par_hat=NULL, group=NULL, m=NULL, k, p)
@@ -95,9 +100,11 @@ It contains the R comment block recommended to help users distinguish high-level
 #
 #  - real_compute / data_generate
 #      Utilities used for simulation studies and computing "true" values.
-#
-# Helper / internal functions (usually not called directly)
-#
+```
+
+
+### Helper / internal functions (usually not called directly)
+```r
 #  - tail_dependence, generate_gfun, nonpar_tail, optim_fun
 #      Core math used by M_estimate.
 #
@@ -109,25 +116,8 @@ It contains the R comment block recommended to help users distinguish high-level
 #
 #  - mst.fit, mst.mle, mst.dev, mst.dev.grad, solvePD, log.pt, num.deriv2, etc.
 #      Skew-t fitting and internal likelihood machinery (copied/derived from 'sn' internals).
-#
-# Suggested workflow (example)
-#
-# 1) Pre-filter returns -> obtain standardized residuals:
-#      res_info = filtering(dat = my_returns, forecast = FALSE)
-#      residuals = res_info  # standardized residuals
-#
-# 2) Estimate tail index and VaR for market (system):
-#      gamma_sys = tail_estimate(dat = residuals[,2], k = round(0.1 * nrow(residuals)))
-#      VaR_sys = Qvar_esti(dat = residuals[,2], gamma = gamma_sys, p = 0.05, k = round(0.01 * nrow(residuals)))
-#
-# 3) Use CoVaR_estimate for proposed method:
-#      covar_est = CoVaR_estimate(Data = residuals, group = c("t","alog"), m = c(200,200),
-#                                  k = c(300,100), p = c(0.01, 0.05))
-#
-# Notes
-#  - Many of the functions accept k/m values as either fractions (<1) or absolute counts.
-#    Passing fractional values retains backward compatibility; the functions convert to counts.
-#  - If you intend to expose these functions as a package, consider adding roxygen-style
-#    documentation and a NAMESPACE export for the main functions.
-################################################################
 ```
+
+### Notes
+- Many of the functions accept k/m values as either fractions (<1) or absolute counts.Passing fractional values retains backward compatibility; the functions convert to counts.
+
