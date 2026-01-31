@@ -41,7 +41,7 @@ covar_proposed <- CoVaR_estimate(resid_matrix, group = "t", m = 500, k = c(300,1
 ```
 
 
-# Quick reference - functions.R
+## Quick reference - functions.R
 
 This file documents the main user-facing functions and suggested usage for the code in `code/functions.R`.
 
